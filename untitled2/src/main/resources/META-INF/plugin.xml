@@ -1,0 +1,62 @@
+<idea-plugin>
+<!--  <idea-version since-build="203.*" until-build="213.*" />-->
+<!--  <idea-version since-build="203.*"/>-->
+  <id>com.dgm</id>
+  <name>Debug Group Manager</name>
+  <version>1.0</version>
+  <vendor email="371964363@qq.com">王银飞</vendor>
+
+  <description>
+    <![CDATA[
+      A SIMPLE BREAKPOINT BOOKMARK GROUPING MANAGER THAT SUPPORTS JAVA BREAKPOINT MANAGEMENT
+      The shortcut key ctr+shift+F11 adds a bookmark, if it does not take effect, please check the shortcut bookmark group manager group under Add a bookmark
+      Bookmark group manager, support multiple tabs, support Java class file debug breakpoint, file changes (including git file merge) automatically followed
+    ]]>
+  </description>
+
+  <change-notes>
+    <![CDATA[
+      v1:
+      1.Bookmark group manager, support multiple tabs
+      2.Support for Java class file debug breakpoints
+      3.File changes (including git file merges) are automatically followed
+    ]]>
+  </change-notes>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.lang</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+    <toolWindow id="DGM" anchor="left" secondary="true" icon="AllIcons.Toolwindows.NoEvents" factoryClass="com.dgm.DGMToolWindow" />
+  </extensions>
+
+  <actions>
+    <action id="new_tab" class="com.dgm.tabaction.BookmarksAddAction" icon="AllIcons.General.Add" />
+    <action id="tab_left" class="com.dgm.tabaction.BookmarksMoveLeft" icon="AllIcons.General.ArrowLeft" />
+    <action id="tab_right" class="com.dgm.tabaction.BookmarksMoveRight" icon="AllIcons.General.ArrowRight" />
+    <action id="tab_delete" class="com.dgm.tabaction.BookmarksDelete" icon="AllIcons.General.Remove" />
+
+
+    <action id="add a bookmark" class="com.dgm.leafaction.BookmarksAddTreeLeaf" icon="AllIcons.General.Add" >
+       <keyboard-shortcut first-keystroke="control shift alt F11" keymap="$default"/>
+    </action>
+
+    <action id="bookmark_delete" class="com.dgm.leafaction.BookmarksDelete" icon="AllIcons.Actions.DeleteTag">
+      <keyboard-shortcut first-keystroke="DELETE" keymap="$default"/>
+    </action>
+    <action id="new_folder" class="com.dgm.leafaction.BookmarksNewFolder" icon="AllIcons.Actions.NewFolder"/>
+    <action id="group_collapse" class="com.dgm.leafaction.BookmarkCollapseall" icon="AllIcons.Actions.Refresh"/>
+    <action id="bookmark_up" class="com.dgm.leafaction.BookmarksUpTreeLeaf" icon="AllIcons.General.ArrowUp">
+      <keyboard-shortcut first-keystroke="alt UP" keymap="$default"/>
+    </action>
+    <action id="bookmark_down" class="com.dgm.leafaction.BookmarksDownTreeLeaf" icon="AllIcons.General.ArrowDown">
+      <keyboard-shortcut first-keystroke="alt DOWN" keymap="$default"/>
+    </action>
+    <action id="bookmark_rename" class="com.dgm.leafaction.BookmarksRenameTreeLeaf" icon="AllIcons.Actions.EditSource">
+      <!--<keyboard-shortcut first-keystroke="control shift F2" keymap="$default"/>-->
+      <keyboard-shortcut first-keystroke="F2" keymap="$default"/>
+    </action>
+  </actions>
+
+</idea-plugin>

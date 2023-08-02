@@ -1,0 +1,84 @@
+buildscript {
+    dependencies {
+        classpath 'com.guardsquare:proguard-gradle:7.1.0'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.jetbrains.intellij' version '1.14.1'
+    id 'java-library'
+}
+intellij {
+//    version = "2020.3.2"
+    version = "2021.3.1"
+    type = "IC"
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+//    api 'cn.hutool:hutool-all:5.8.20'
+    api 'org.xerial:sqlite-jdbc:3.21.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task myProguardTask(type: proguard.gradle.ProGuardTask) {
+    //这里需要具备Gradle Task 知识点
+    //让proguardTask 依赖 `compileJava`任务执行
+//    tasks.jar.dependsOn proguardTask
+
+    println "proguarding"
+
+    // 配置ProGuardTask
+    printmapping "$buildDir/mapping.txt"
+    //配置混淆文件规则
+    configuration 'proguard-rules.pro'
+    //引入依赖库
+//    libraryjars files('D:\\software\\ideaIU\\lib\\rt.jar')
+    libraryjars files('C:\\Users\\1\\.jdks\\corretto-11.0.20\\jmods\\')
+    libraryjars files('D:\\develop\\idea\\ideaIU-2020.3.2.win\\lib\\')
+//    libraryjars files('D:\\software\\java\\jdk8\\jre\\lib\\')
+//    libraryjars files('C:\\Users\\王银飞\\.gradle\\caches\\modules-2\\files-2.1\\com.jetbrains.intellij.idea\\ideaIC\\2020.3.2\\13938c2ba003ffe980f450345eea516cd9c2375f\\ideaIC-2020.3.2\\lib\\')
+
+
+
+    //参与混淆的类
+    injars sourceSets.main.output
+    injars 'com.dgm'
+
+    //混淆后的文件(Class 或其它)输出目录
+    String outDir = "$buildDir/proguard-classes"
+    outjars outDir
+
+    //compileJava任务处理后的class文件输出目录
+    File classesDir = sourceSets.main.output.classesDirs.getFiles()[0]
+    println("classDir:$classesDir")
+
+    // 清除上次的生成物
+    delete outDir
+
+    // 在本task的execute阶段，将混淆后的class文件替换正常class文件
+    doLast {
+        println "copying product:$classesDir"
+
+        // 删除原有的class文件
+        delete "$classesDir"
+        // 将混淆class文件复制过去
+        copy {
+            from outDir
+            into classesDir
+        }
+    }
+}
