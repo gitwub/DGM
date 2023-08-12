@@ -2,6 +2,7 @@ package com.dgm.db;
 
 import com.dgm.ApplicationContext;
 import com.dgm.DGMConstant;
+import com.dgm.ui.FolderNode;
 import com.dgm.ui.LogUtils;
 import com.dgm.ui.MyTreeNode;
 import com.dgm.db.po.Node;
@@ -11,8 +12,11 @@ import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.project.Project;
+
 import org.sqlite.javax.SQLiteConnectionPoolDataSource;
 
+import java.awt.print.Book;
 import java.io.File;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
@@ -29,22 +33,22 @@ import javax.swing.tree.TreePath;
 public abstract class DBUtils implements Disposable {
     public SQLiteConnectionPoolDataSource connect = null;
     protected static final String TABLE_NAME_PRE = "dgm";
-    public final ApplicationContext app;
+    public final Project app;
     private static boolean showDBPath = false;
     protected DefaultMutableTreeNode root;
 
     private AtomicInteger id = new AtomicInteger();
 
-    public DBUtils(ApplicationContext app) {
+    public DBUtils(Project app) {
         this.app = app;
     }
 
     public void init() throws SQLException {
-        PropertiesComponent instance = PropertiesComponent.getInstance(app.getProject());
+        PropertiesComponent instance = PropertiesComponent.getInstance(app);
         String value = instance.getValue("com.dmg.root.path");
         File file = null;
         if (value == null || "".equals(value)) {
-            file = new File(app.getProject().getBasePath() + "/" + DGMConstant.DMG_ROOT_PATH);
+            file = new File(app.getBasePath() + "/" + DGMConstant.DMG_ROOT_PATH);
         } else {
             file = new File(DGMConstant.DMG_ROOT_PATH);
         }
@@ -57,7 +61,7 @@ public abstract class DBUtils implements Disposable {
         connect.setLogWriter(new PrintWriter(System.out));
 
 
-        LogUtils.initDB(app, "connect : %s", connect.hashCode()+"");
+//        LogUtils.initDB(app, "connect : %s", connect.hashCode()+"");
         if(!tableExists()) {
             if (TABLE_NAME_PRE.equals(getTableName())) {
                 connect.getConnection().createStatement().execute("create table dgm ( id integer primary key autoincrement, name varchar(10) not null unique, active integer default 0, sort_index integer not null);");
@@ -76,6 +80,11 @@ public abstract class DBUtils implements Disposable {
                                 "    `level` integer not null default 1,\n" +//树级别 从一开始连续的
                                 "    `dgm_type` integer not null,\n" +// 0.叶子节点 1.组节点
                                 "    `checked` integer default 0,\n" +// 1选中 0未选中
+                                "    `editor_text_color` text default null,\n" +// 编辑区文本颜色
+                                "    `editor_bg_color` text default null,\n" +//编辑区背景颜色
+                                "    `editor_style_color` text default null,\n" +//编辑区风格颜色
+                                "    `editor_style` text default null,\n" +//编辑区风格
+                                "    `lock_at` text default null,\n" +// 1选中 0未选中
                                 "    `file_path` text,\n" +//文件路径
                                 "    `jar_name` text,\n" +//jar名字
                                 "    `icon_path` text,\n" +//图标路径
@@ -193,7 +202,7 @@ public abstract class DBUtils implements Disposable {
             connect.getConnection().createStatement().execute("DELETE FROM " + getTableName() + ";");
             buildNode(tree, root.children());
 
-            LogUtils.saveDB(app, "connect : %s", connect.hashCode()+"");
+//            LogUtils.saveDB(app, "connect : %s", connect.hashCode()+"");
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -209,6 +218,11 @@ public abstract class DBUtils implements Disposable {
             node.setNodeName(treeNode.getUserObject().toString());
             node.setSortIndex(index++);
 
+            if (treeNode.getParent() instanceof FolderNode) {
+                node.setParentId(((FolderNode) treeNode.getParent()).node().getId());
+            } else if (treeNode.getParent() instanceof DefaultMutableTreeNode) {
+                node.setParentId(DGMConstant.ROOT);
+            }
             if (node.getDgmType() == DGMConstant.NODE_GROUP) {
                 node.setState(tree.isExpanded(new TreePath(treeNode.getPath())) ? DGMConstant.NODE_EXPANDED : DGMConstant.NODE_COLLAPSED);
                 buildNode(tree, treeNode.children());

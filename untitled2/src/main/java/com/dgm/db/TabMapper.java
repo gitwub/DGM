@@ -1,6 +1,7 @@
 package com.dgm.db;
 
 import com.dgm.ApplicationContext;
+import com.dgm.Utils;
 import com.dgm.ui.LogUtils;
 import com.dgm.ui.TreeView;
 import com.dgm.db.po.Node;
@@ -8,6 +9,7 @@ import com.intellij.icons.AllIcons;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
@@ -26,7 +28,7 @@ import static com.dgm.DGMToolWindow.keyLis;
 public class TabMapper extends DBUtils{
     public static Key<TabMapper> key = new Key(TabMapper.class.getName());
     private Map<String, TreeView> tabs = new HashMap<>();
-    public TabMapper(ApplicationContext app) {
+    public TabMapper(Project app) {
         super(app);
         try {
             init();
@@ -64,10 +66,10 @@ public class TabMapper extends DBUtils{
             throwables.printStackTrace();
         }
 
-        ContentManagerListener managerListener = app.getProject().getUserData(keyLis);
-        app.getToolWindow().getContentManager().removeContentManagerListener(managerListener);
-        app.getToolWindow().getContentManager().removeAllContents(false);
-        app.getProject().putUserData(TreeView.key, null);
+        ContentManagerListener managerListener = app.getUserData(keyLis);
+         Utils.getWindow(app).getContentManager().removeContentManagerListener(managerListener);
+         Utils.getWindow(app).getContentManager().removeAllContents(false);
+        app.putUserData(TreeView.key, null);
         for (int i = 0; i < nodes.size(); i++) {
             ContentFactory instance = ContentFactory.SERVICE.getInstance();
             String name = nodes.get(i).getNodeName();
@@ -78,14 +80,14 @@ public class TabMapper extends DBUtils{
             TreeView jComponent = tabs.get(name);
             Content content = instance.createContent(jComponent, name, true);
 
-            app.getToolWindow().getContentManager().addContent(content);
+             Utils.getWindow(app).getContentManager().addContent(content);
             if (nodes.get(i).isChecked()) {
-                app.getToolWindow().getContentManager().setSelectedContent(content);
-                app.getToolWindow().getContentManager().requestFocus(content, true);
-                app.getProject().putUserData(TreeView.key, jComponent);
+                 Utils.getWindow(app).getContentManager().setSelectedContent(content);
+                 Utils.getWindow(app).getContentManager().requestFocus(content, true);
+                app.putUserData(TreeView.key, jComponent);
             }
         }
-        app.getToolWindow().getContentManager().addContentManagerListener(managerListener);
+        Utils.getWindow(app).getContentManager().addContentManagerListener(managerListener);
     }
 
     public void up() {
@@ -161,22 +163,21 @@ public class TabMapper extends DBUtils{
     }
 
     public void delete() {
-        try {
-            connect.getConnection().createStatement().executeUpdate("drop table " + TABLE_NAME_PRE + "_" + currentActiveName() + ";");
-            connect.getConnection().createStatement().executeUpdate("update dgm set sort_index = sort_index - 1 where sort_index > (select sort_index from dgm where active = '1');");
-            connect.getConnection().createStatement().executeUpdate("delete from dgm where active = '1';");
-            connect.getConnection().createStatement().executeUpdate("update dgm set active = '1' where sort_index = '0';");
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+        TreeView component = (TreeView)  Utils.getWindow(app).getContentManager().getSelectedContent().getComponent();
+        if(component != null && component.delete()) {
+            try {
+                connect.getConnection().createStatement().executeUpdate("drop table " + TABLE_NAME_PRE + "_" + currentActiveName() + ";");
+                connect.getConnection().createStatement().executeUpdate("update dgm set sort_index = sort_index - 1 where sort_index > (select sort_index from dgm where active = '1');");
+                connect.getConnection().createStatement().executeUpdate("delete from dgm where active = '1';");
+                connect.getConnection().createStatement().executeUpdate("update dgm set active = '1' where sort_index = '0';");
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
 
-        TreeView component = (TreeView) app.getToolWindow().getContentManager().getSelectedContent().getComponent();
-        if(component != null) {
-            component.delete();
             tabs.remove(component.getTreeViewName());
-            LogUtils.delTab(app,"tab name %s", component.getTreeViewName());
+//            LogUtils.delTab(app,"tab name %s", component.getTreeViewName());
+            refresh();
         }
-        refresh();
     }
 
     public boolean contains(String inputString){
@@ -255,5 +256,9 @@ public class TabMapper extends DBUtils{
             }
         }
         return name;
+    }
+
+    public Map<String, TreeView> getTabs() {
+        return tabs;
     }
 }

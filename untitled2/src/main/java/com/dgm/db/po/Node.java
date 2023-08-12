@@ -112,7 +112,7 @@ public class Node {
     private String editorBgColor = CheckboxTreeCellRenderer.flow;
     private String editorStyleColor = CheckboxTreeCellRenderer.flow;
     private String editorStyle = CheckboxTreeCellRenderer.flow;
-
+    private String locked;
 
     public String getId() {
         return id;
@@ -365,6 +365,15 @@ public class Node {
 
     public Node setEditorStyle(String editorStyle) {
         this.editorStyle = editorStyle;
+        return this;
+    }
+
+    public String getLocked() {
+        return locked;
+    }
+
+    public Node setLocked(String locked) {
+        this.locked = locked;
         return this;
     }
 }

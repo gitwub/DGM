@@ -25,10 +25,20 @@
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lang</depends>
+  <depends>Git4Idea</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <!-- Add your extensions here -->
-    <toolWindow id="DGM" anchor="left" secondary="true" icon="AllIcons.Toolwindows.NoEvents" factoryClass="com.dgm.DGMToolWindow" />
+    <toolWindow id="DGM" anchor="left" secondary="true" icon="AllIcons.Toolwindows.NoEvents" factoryClass="com.dgm.DGMToolWindow"/>
+    <projectIndexingHistoryListener implementation="com.dgm.DGMToolWindow"/>
+  </extensions>
+
+  <applicationListeners>
+    <listener class="com.dgm.MyProjectManager" topic="com.intellij.openapi.project.ProjectManagerListener"/>
+  </applicationListeners>
+
+  <extensions defaultExtensionNs="Git4Idea">
+    <!-- Add your extensions here -->
   </extensions>
 
   <actions>
@@ -43,7 +53,7 @@
     </action>
 
     <action id="bookmark_delete" class="com.dgm.leafaction.BookmarksDelete" icon="AllIcons.Actions.DeleteTag">
-      <keyboard-shortcut first-keystroke="DELETE" keymap="$default"/>
+      <keyboard-shortcut first-keystroke="alt DELETE" keymap="$default"/>
     </action>
     <action id="new_folder" class="com.dgm.leafaction.BookmarksNewFolder" icon="AllIcons.Actions.NewFolder"/>
     <action id="group_collapse" class="com.dgm.leafaction.BookmarkCollapseall" icon="AllIcons.Actions.Refresh"/>

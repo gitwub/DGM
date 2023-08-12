@@ -8,6 +8,7 @@ import com.dgm.ui.MyTreeNode;
 import com.dgm.ui.TreeView;
 import com.dgm.ui.action.BookAction;
 import com.dgm.ui.renderer.CheckboxTreeCellRenderer;
+import com.intellij.openapi.project.Project;
 import com.intellij.ui.CheckedTreeNode;
 
 import java.awt.Rectangle;
@@ -27,11 +28,11 @@ import javax.swing.tree.TreePath;
  * @description
  */
 public class MyMouseAdapter extends MouseAdapter {
-    private ApplicationContext app;
+    private Project app;
     private TreeView treeView;
     private CheckboxTreeCellRenderer renderer;
 
-    public MyMouseAdapter(ApplicationContext app, TreeView treeView, CheckboxTreeCellRenderer renderer) {
+    public MyMouseAdapter(Project app, TreeView treeView, CheckboxTreeCellRenderer renderer) {
         this.app = app;
         this.treeView = treeView;
         this.renderer = renderer;
@@ -71,7 +72,7 @@ public class MyMouseAdapter extends MouseAdapter {
 
                         if(node instanceof BookNode) {
                             node.setChecked(!node.isChecked());
-                            app.getProject().getUserData(BreakNode.KEY).checked(((BookNode)node).getJavaBreakKey(), node.isChecked());
+                            app.getUserData(BreakNode.KEY).checked(((BookNode)node).getJavaBreakKey(), node.isChecked());
                         } else if(node instanceof FolderNode){
                             Enumeration<TreeNode> children = node.children();
                             boolean checked = false;
@@ -119,7 +120,7 @@ public class MyMouseAdapter extends MouseAdapter {
             if (node.isEnabled()) {
                 item.setChecked(checked);
                 if (item instanceof BookNode) {
-                    app.getProject().getUserData(BreakNode.KEY).checked(item.getJavaBreakKey(), node.isChecked());
+                    app.getUserData(BreakNode.KEY).checked(item.getJavaBreakKey(), node.isChecked());
                 } else {
                     check(item, checked);
                 }

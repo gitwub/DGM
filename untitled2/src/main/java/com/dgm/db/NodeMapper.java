@@ -12,6 +12,7 @@ import com.intellij.icons.AllIcons;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 
 import java.sql.ResultSet;
@@ -26,19 +27,19 @@ import javax.swing.tree.TreePath;
 public class NodeMapper extends DBUtils {
 
     private static final String fullSelectId = "`id`";
-    private static final String fullSelectFull = "`sort_index`,`parent_id`, `node_name`, `protocol`, `color`, `wave_color`, `text_style`, `level`, `dgm_type`, `checked`, `file_path`, `jar_name`, `icon_path`, `origin_text`, `line_number`, `column`, `line_end_offset`, `location`, `state`";
+    private static final String fullSelectFull = "`sort_index`,`parent_id`, `node_name`, `protocol`, `color`, `wave_color`, `text_style`, `level`, `dgm_type`, `checked`, `file_path`, `jar_name`, `icon_path`, `origin_text`, `line_number`, `column`, `line_end_offset`, `location`, `editor_text_color`, `editor_bg_color`, `editor_style_color`, `editor_style`, `lock_at`, `state`";
     private static final String fullSelectSql = fullSelectId + ", " + fullSelectFull;
 
     public static Key<NodeMapper> key = new Key(NodeMapper.class.getName());
     private String tableName;
     private List<TreePath> treePaths = new ArrayList<>();
 
-    public NodeMapper(ApplicationContext app, DefaultMutableTreeNode root, String tableName) {
+    public NodeMapper(Project app, DefaultMutableTreeNode root, String tableName) {
         super(app);
         this.root = root;
         this.tableName = tableName;
         try {
-            LogUtils.initNodeMapper(app, "tableName %s", tableName);
+//            LogUtils.initNodeMapper(app, "tableName %s", tableName);
             init();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -87,7 +88,7 @@ public class NodeMapper extends DBUtils {
                 } else {
                     BookNode bookNode = new BookNode(app, tableName, e);
                     root.add(bookNode);
-                    app.getProject().getUserData(BreakNode.KEY).add(bookNode);
+                    app.getUserData(BreakNode.KEY).add(bookNode);
                 }
             }
             resultSet.close();
@@ -153,6 +154,13 @@ public class NodeMapper extends DBUtils {
         e.setColor(resultSet.getString("color"));
         e.setWaveColor(resultSet.getString("wave_color"));
         e.setTextStyle(resultSet.getString("text_style"));
+
+        e.setEditorTextColor(resultSet.getString("editor_text_color"));
+        e.setEditorBgColor(resultSet.getString("editor_bg_color"));
+        e.setEditorStyleColor(resultSet.getString("editor_style_color"));
+        e.setEditorStyle(resultSet.getString("editor_style"));
+        e.setLocked(resultSet.getString("lock_at"));
+
         e.setLevel(resultSet.getInt("level"));
         e.setChecked(resultSet.getBoolean("checked"));
         e.setFilePath(resultSet.getString("file_path"));
@@ -182,29 +190,40 @@ public class NodeMapper extends DBUtils {
                 "values (" +
                 "'" + node.getId() + "'," +
                 (node.getSortIndex() == -1 ? "(select count(1) from " + getTableName() + " where level = '" + node.getLevel() + "' and parent_id = '" +  node.getParentId() + "')," : "'"+node.getSortIndex()+"',") +
-                "'" + node.getParentId() + "'," +
-                "'" + node.getNodeName() + "'," +
-                "'" + node.getProtocol() + "'," +
-                "'" + node.getColor() + "'," +
-                "'" + node.getWaveColor() + "'," +
-                "'" + node.getTextStyle() + "'," +
+                ifNull(node.getParentId()) + "," +
+                ifNull(node.getNodeName()) + "," +
+                ifNull(node.getProtocol()) + "," +
+                ifNull(node.getColor()) + "," +
+                ifNull(node.getWaveColor()) + "," +
+                ifNull(node.getTextStyle()) + "," +
+
                 "'" + node.getLevel() + "'," +
                 "'" + node.getDgmType() + "'," +
                 "'" + (node.isChecked() ? "1":"0") + "'," +
-                "'" + node.getFilePath() + "'," +
-                "'" + node.getJarName() + "'," +
-                "'" + node.getIconPath() + "'," +
-                "'" + node.getOriginText() + "'," +
+
+                ifNull(node.getFilePath()) + "," +
+                ifNull(node.getJarName()) + "," +
+                ifNull(node.getIconPath()) + "," +
+                ifNull(node.getOriginText()) + "," +
+
                 "'" + node.getLineNumber() + "'," +
                 "'" + node.getColumn() + "'," +
                 "'" + node.getLineEndOffset() + "'," +
                 "'" + node.getLocation() + "'," +
+                ifNull(node.getEditorTextColor()) + "," +
+                ifNull(node.getEditorBgColor()) + "," +
+                ifNull(node.getEditorStyleColor()) + "," +
+                ifNull(node.getEditorStyle()) + "," +
+                ifNull(node.getLocked()) + "," +
                 "'" + node.getState() + "'" +
                 ");"
         );
-        LogUtils.saveNode(app, "node name %s", node.getNodeName());
+//        LogUtils.saveNode(app, "node name %s", node.getNodeName());
     }
 
+    private String ifNull(String val) {
+        return val == null ? "null" : "'"+val+"'";
+    }
     public List<TreePath> getExpandTreePaths() {
         return treePaths;
     }

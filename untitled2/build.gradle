@@ -12,6 +12,7 @@ plugins {
 intellij {
 //    version = "2020.3.2"
     version = "2021.3.1"
+    plugins = ['Git4Idea']
     type = "IC"
 }
 

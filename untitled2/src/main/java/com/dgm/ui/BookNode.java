@@ -32,6 +32,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.progress.impl.BackgroundableProcessIndicator;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.VirtualFileSystem;
@@ -78,12 +79,12 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
     private AtomicReference<VirtualFile> virtualFile = new AtomicReference<>();
     private volatile int lineNumber;
     private RangeHighlighterEx rangeHighlighterEx;
-    public volatile static boolean start = false;
-    public BookNode(ApplicationContext app, String tableName, Node node) {
+
+    public BookNode(Project app, String tableName, Node node) {
         this(app, node, tableName,false);
     }
 
-    public BookNode(ApplicationContext app, Node node, String tableName, boolean searchable) {
+    public BookNode(Project app, Node node, String tableName, boolean searchable) {
         super(node);
         this.app = app;
         this.searchable = searchable;
@@ -104,7 +105,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         VirtualFileSystem fileSystem = instance.getFileSystem(protocol);
         if (DGMConstant.SYSTEM_FILE.equals(protocol)) {
             if(node.getLocation() == DGMConstant.NODE_LOCATION_INNER) {//项目下文件
-                virtualFile.set(fileSystem.findFileByPath(app.getProject().getBasePath() + path));
+                virtualFile.set(fileSystem.findFileByPath(app.getBasePath() + path));
                 addDebugAndChangeListener();
             } else {//项目外的文件
                 virtualFile.set(fileSystem.findFileByPath(path));
@@ -119,9 +120,9 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                 if (list != null) {
                     if (list.size() == 0) {
                         System.out.println("BookNode.BookNode:"+node.getFilePath()+"::"+node.getNodeName()+list.size());
-                        app.notifyError(node.getJarName() + "不存在,无法添加断点");
+                        ApplicationContext.notifyError(node.getJarName() + "不存在,无法添加断点");
                     } else if (list.size() == 1) {
-                        app.ui(() -> {
+                        ApplicationContext.ui(() -> {
                             if(list.get(0).getItem() instanceof  PsiFileImpl) {
                                 virtualFile.set(((PsiFileImpl) list.get(0).getItem()).getVirtualFile());
                                 addDebugAndChangeListener();
@@ -134,7 +135,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                         });
                     } else {
                         if(alreadyChoose.get(path) != null){
-                            app.ui(() -> {
+                            ApplicationContext.ui(() -> {
                                 virtualFile.set(alreadyChoose.get(path));
                                 addDebugAndChangeListener();
                                 addEditorState();
@@ -145,7 +146,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                                 addDebugAndChangeListener();
                                 addEditorState();
                             };
-                            app.duplication(path, alreadyChoose, list, node, runnable);
+                            ApplicationContext.duplication(app, path, alreadyChoose, list, node, runnable);
                         }
                     }
                 }
@@ -166,16 +167,16 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
     }
 
     private void globalSearchClass(String path, JButton button, AtomicReference<List> reference, ArrayList list) {
-        DataContext dataContext = DataManager.getInstance().getDataContext(app.getProject().getUserData(DGMToolWindow.windowComponent));
+        DataContext dataContext = DataManager.getInstance().getDataContext(app.getUserData(DGMToolWindow.windowComponent));
         ClassSearchEverywhereContributor classSearchEverywhereContributor = new ClassSearchEverywhereContributor(new AnActionEvent(null, dataContext, "", new Presentation(), ActionManager.getInstance(), 0));
-        classSearchEverywhereContributor.setScope(new ScopeDescriptor(new ProjectAndLibrariesScope(app.getProject())));
-        BackgroundableProcessIndicator classIndicator = new BackgroundableProcessIndicator(new Task.Backgroundable(app.getProject(), path) {
+        classSearchEverywhereContributor.setScope(new ScopeDescriptor(new ProjectAndLibrariesScope(app)));
+        BackgroundableProcessIndicator classIndicator = new BackgroundableProcessIndicator(new Task.Backgroundable(app, path) {
             @Override
             public void run(ProgressIndicator progressIndicator) {
                 progressIndicator.cancel();
             }
         });
-        app.work(()->{
+        ApplicationContext.work(()->{
             try {
                 List<Object> items = (List<Object>) classSearchEverywhereContributor.searchWeightedElements(path.substring(path.indexOf("/")+1).replace("/", ".").replace(".class", "").replace(".java", ""), classIndicator, 10).getItems();
                 Set<String> paths = new HashSet<>();
@@ -201,17 +202,17 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
     }
 
     private void globalSearchFile(String path, JButton button, AtomicReference<List> reference, ArrayList list) {
-        DataContext dataContext = DataManager.getInstance().getDataContext(app.getProject().getUserData(DGMToolWindow.windowComponent));
+        DataContext dataContext = DataManager.getInstance().getDataContext(app.getUserData(DGMToolWindow.windowComponent));
         FileSearchEverywhereContributor fileSearchEverywhereContributor = new FileSearchEverywhereContributor(new AnActionEvent(null, dataContext, "", new Presentation(), ActionManager.getInstance(), 0));
-        fileSearchEverywhereContributor.setScope(new ScopeDescriptor(new ProjectAndLibrariesScope(app.getProject())));
-        BackgroundableProcessIndicator fileIndicator = new BackgroundableProcessIndicator(new Task.Backgroundable(app.getProject(), path){
+        fileSearchEverywhereContributor.setScope(new ScopeDescriptor(new ProjectAndLibrariesScope(app)));
+        BackgroundableProcessIndicator fileIndicator = new BackgroundableProcessIndicator(new Task.Backgroundable(app, path){
             @Override
             public void run(ProgressIndicator progressIndicator) {
                 progressIndicator.start();
             }
         });
 
-        app.work(()->{
+        ApplicationContext.work(()->{
 
             BackgroundableProcessIndicator fileIndicator2 = null;
             try {
@@ -223,7 +224,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                         .collect(Collectors.toList()));
 
                 if(list.size() == 0) {
-                    fileIndicator2 = new BackgroundableProcessIndicator(new Task.Backgroundable(app.getProject(), path){
+                    fileIndicator2 = new BackgroundableProcessIndicator(new Task.Backgroundable(app, path){
                         @Override
                         public void run(ProgressIndicator progressIndicator) {
                             progressIndicator.start();
@@ -254,19 +255,19 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         }
 
         if(isChecked) {
-            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app.getProject(), virtualFile.get(), lineNumber, true);
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
         } else {
-            XBreakpoint<?>[] allBreakpoints = XDebuggerManagerImpl.getInstance(app.getProject()).getBreakpointManager().getAllBreakpoints();
+            XBreakpoint<?>[] allBreakpoints = XDebuggerManagerImpl.getInstance(app).getBreakpointManager().getAllBreakpoints();
             for (int i = 0; i < allBreakpoints.length; i++) {
                 XSourcePosition sourcePosition = allBreakpoints[i].getSourcePosition();
                 if (sourcePosition != null && sourcePosition.getFile().getPath().equals(virtualFile.get().getPath()) && sourcePosition.getLine() == lineNumber) {
-                    XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app.getProject(), virtualFile.get(), lineNumber, true);
+                    XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
                     node.setState(isChecked ? DGMConstant.NODE_EXPANDED : DGMConstant.NODE_COLLAPSED);
                     this.isChecked = true;
                     node.setChecked(true);
-                    if (app.getProject().getUserData(TreeView.key) != null) {
-                        app.getProject().getUserData(TreeView.key).getTree().requestFocus();
-                        FileEditorManager.getInstance(app.getProject()).openFile(virtualFile.get(),true);
+                    if (app.getUserData(TreeView.key) != null) {
+                        app.getUserData(TreeView.key).getTree().requestFocus();
+                        FileEditorManager.getInstance(app).openFile(virtualFile.get(),true);
                     }
                 }
             }
@@ -274,6 +275,14 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
 
         FileDocumentManager.getInstance().getDocument(virtualFile.get()).addDocumentListener(this, this);
 
+    }
+
+    public void removeEditorState() {
+        MarkupModelEx markupModelEx = (MarkupModelEx) DocumentMarkupModel.forDocument(FileDocumentManager.getInstance().getDocument(virtualFile.get()), app, true);
+        if(rangeHighlighterEx != null) {
+            markupModelEx.removeHighlighter(rangeHighlighterEx);
+        }
+        rangeHighlighterEx = null;
     }
 
     @Override
@@ -291,7 +300,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         }
 
         TextAttributes attributes = new TextAttributes(textColor,bgColor,styleColor, effectType, 0);
-        MarkupModelEx markupModelEx = (MarkupModelEx) DocumentMarkupModel.forDocument(FileDocumentManager.getInstance().getDocument(virtualFile.get()), app.getProject(), true);
+        MarkupModelEx markupModelEx = (MarkupModelEx) DocumentMarkupModel.forDocument(FileDocumentManager.getInstance().getDocument(virtualFile.get()), app, true);
         if(rangeHighlighterEx != null) {
             markupModelEx.removeHighlighter(rangeHighlighterEx);
         }
@@ -303,9 +312,8 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
             rangeHighlighterEx.setGutterIconRenderer(new GutterActionRenderer(new AnAction(AllIcons.Diff.Arrow) {
                 @Override
                 public void actionPerformed(AnActionEvent anActionEvent) {
-                    System.out.println("BookNode.actionPerformed:");
-                    TabMapper tabMapper = app.getProject().getUserData(TabMapper.key);
-                    TreeView treeView = app.getProject().getUserData(TreeView.key);
+                    TabMapper tabMapper = app.getUserData(TabMapper.key);
+                    TreeView treeView = app.getUserData(TreeView.key);
                     if (treeView != null) {
                         if(tabMapper != null && !treeView.getTreeViewName().equals(tableName)) {
                             tabMapper.activeName(tableName);
@@ -353,20 +361,20 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                     List<FoundItemDescriptor<Object>> list = reference.get();
                     if (list != null) {
                         if (list.size() == 0) {
-                            app.notifyError("包不存在,无法跳转到:" + path);
+                            ApplicationContext.notifyError("包不存在,无法跳转到:" + path);
                         } else if (list.size() == 1) {
                             if(list.get(0).getItem() instanceof  PsiFileImpl) {
-                                app.navigate(((PsiFileImpl) list.get(0).getItem()).getVirtualFile(), node.getLineNumber());
+                                ApplicationContext.navigate(app, ((PsiFileImpl) list.get(0).getItem()).getVirtualFile(), node.getLineNumber());
                             } else if(list.get(0).getItem() instanceof PsiElementBase){
-                                app.navigate(((PsiElementBase) list.get(0).getItem()).getContainingFile().getVirtualFile(), node.getLineNumber());
+                                ApplicationContext.navigate(app, ((PsiElementBase) list.get(0).getItem()).getContainingFile().getVirtualFile(), node.getLineNumber());
                             } else {
-                                app.notifyError("未知问题请联系作者!!!");
+                                ApplicationContext.notifyError("未知问题请联系作者!!!");
                             }
                         } else {
                             if(alreadyChoose.get(path) != null){
-                                app.navigate(alreadyChoose.get(path), node.getLineNumber());
+                                ApplicationContext.navigate(app, alreadyChoose.get(path), node.getLineNumber());
                             } else {
-                                app.duplication(path, alreadyChoose, list, node, e->alreadyChoose.put(path, e));
+                                ApplicationContext.duplication(app, path, alreadyChoose, list, node, e->alreadyChoose.put(path, e));
                             }
                         }
                     }
@@ -382,15 +390,15 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
             } else if(DGMConstant.SYSTEM_FILE.equals(node.getProtocol())){
                 VirtualFile virtualFile = null;
                 if(DGMConstant.LOCATION_INNER == node.getLocation()) {
-                    virtualFile = file.findFileByPath(app.getProject().getBasePath() + path);
+                    virtualFile = file.findFileByPath(app.getBasePath() + path);
                 } else {
                     virtualFile = file.findFileByPath(path);
                 }
 
                 if (virtualFile != null) {
-                    app.navigate(virtualFile, node.getLineNumber());
+                    ApplicationContext.navigate(app, virtualFile, node.getLineNumber());
                 } else {
-                    app.notifyError("文件不存在:" + path);
+                    ApplicationContext.notifyError("文件不存在:" + path);
                 }
             }
         }
@@ -410,7 +418,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         this.isChecked = checked;
         if (virtualFile.get() != null) {
             node.setState(isChecked ? DGMConstant.NODE_EXPANDED : DGMConstant.NODE_COLLAPSED);
-            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app.getProject(), virtualFile.get(), lineNumber, checked);
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, checked);
         }
     }
 
@@ -421,16 +429,18 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
             return;
         }
 
-        this.rangeHighlighterEx.getStartOffset();
-        this.rangeHighlighterEx.getEndOffset();
-        int newLine = this.rangeHighlighterEx.getDocument().getLineNumber(this.rangeHighlighterEx.getStartOffset());
+        if(node().getLocked() == null || DGMConstant.LOCKED_.equals(node().getLocked())) {
+            this.rangeHighlighterEx.getStartOffset();
+            this.rangeHighlighterEx.getEndOffset();
+            int newLine = this.rangeHighlighterEx.getDocument().getLineNumber(this.rangeHighlighterEx.getStartOffset());
 
-        if (lineNumber == newLine) {
-            addEditorState();
-        }
-        if(lineNumber != newLine){
-            lineNumber = newLine;
-            node.setLineNumber(newLine);
+            if (lineNumber == newLine) {
+                addEditorState();
+            }
+            if(lineNumber != newLine){
+                lineNumber = newLine;
+                node.setLineNumber(newLine);
+            }
         }
     }
 
@@ -446,7 +456,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
 
     public void removeDebugColor() {
         if (virtualFile != null && rangeHighlighterEx != null) {
-            MarkupModelEx markupModelEx = (MarkupModelEx) DocumentMarkupModel.forDocument(FileDocumentManager.getInstance().getDocument(virtualFile.get()), app.getProject(), true);
+            MarkupModelEx markupModelEx = (MarkupModelEx) DocumentMarkupModel.forDocument(FileDocumentManager.getInstance().getDocument(virtualFile.get()), app, true);
             markupModelEx.removeHighlighter(rangeHighlighterEx);
         }
     }
@@ -454,6 +464,71 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
     public void removeListener() {
         if(virtualFile.get() != null) {
             FileDocumentManager.getInstance().getDocument(virtualFile.get()).removeDocumentListener(this);
+        }
+    }
+
+    @Override
+    public void lock() {
+        if (virtualFile != null && !virtualFile.get().isWritable()) {
+            return;
+        }
+        if (node.getLocked() == null) {
+            node.setLocked(DGMConstant.LOCKED_);
+        }
+    }
+
+    @Override
+    public void unlock() {
+        if (node.getLocked() != null) {
+            node.setLocked(null);
+        }
+    }
+
+    @Override
+    public void bind(String branchName) {
+        if (virtualFile != null && !virtualFile.get().isWritable()) {
+            return;
+        }
+        if(node.getLocked() == null) {
+            node.setLocked(branchName);
+            removeEditorState();
+        }
+    }
+
+    @Override
+    public void unbind() {
+        if(node.getLocked() != null && !DGMConstant.LOCKED_.equals(node.getLocked())) {
+            node.setLocked(null);
+            addEditorState();
+        }
+    }
+
+    @Override
+    public void autoLockOrBind() {
+        if(node.getLocked() == null) {
+
+        } else {
+            if(DGMConstant.LOCKED_.equals(node.getLocked())) {
+                addEditorState();
+            } else {
+                removeEditorState();
+            }
+        }
+    }
+
+    @Override
+    public void autoUnlockOrUnbind(String branchName) {
+        if (branchName.equals(node.getLocked())) {
+            node.setLocked(null);
+            addEditorState();
+        }
+    }
+
+    @Override
+    public void bindIfNull(String branchName) {
+        if (node.getLocked() == null) {
+            node.setLocked(branchName);
+            removeEditorState();
         }
     }
 }

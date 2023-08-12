@@ -2,6 +2,7 @@ package com.dgm.leafaction;
 
 import com.dgm.DGMToolWindow;
 import com.dgm.ApplicationContext;
+import com.dgm.Utils;
 import com.dgm.ui.MyTreeNode;
 import com.dgm.ui.TreeView;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -26,9 +27,8 @@ public class BookmarksUpTreeLeaf extends MyAnAction implements DumbAware {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
-        ApplicationContext app = anActionEvent.getProject().getUserData(DGMToolWindow.key);
-        if (enable && app.getToolWindow() != null) {
-            ContentManager contentManager = app.getToolWindow().getContentManager();
+        if (enable && Utils.getWindow(anActionEvent.getProject()) != null) {
+            ContentManager contentManager = Utils.getWindow(anActionEvent.getProject()).getContentManager();
             if(contentManager.getSelectedContent() != null){
                 JComponent component = contentManager.getSelectedContent().getComponent();
                 if (component != null) {

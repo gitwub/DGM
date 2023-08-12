@@ -12,12 +12,14 @@ import com.dgm.ui.renderer.SearchTreeCellRenderer;
 import com.intellij.find.SearchTextArea;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.IdeBundle;
+import com.intellij.ide.dnd.aware.DnDAwareTree;
 import com.intellij.ide.favoritesTreeView.FavoritesManager;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CustomShortcutSet;
 import com.intellij.openapi.actionSystem.EmptyAction;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.Key;
@@ -30,6 +32,7 @@ import com.intellij.util.ui.components.BorderLayoutPanel;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.Component;
+import java.awt.event.MouseEvent;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -49,6 +52,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
@@ -66,11 +70,11 @@ public class TreeView extends BorderLayoutPanel {
 
     private static Logger log = Logger.getLogger(TreeView.class.getName());
     private SearchTextArea comp;
-    private ApplicationContext app;
+    private Project app;
     private String name;
     private DefaultMutableTreeNode root = new DefaultMutableTreeNode(DGMConstant.ROOT);
     private DefaultTreeModel treemodel = new DefaultTreeModel(root);
-    private Tree tree = new Tree(treemodel);
+    private MyDnDAwareTree tree = new MyDnDAwareTree(treemodel, this);
     private CheckboxTreeCellRenderer renderer = new CheckboxTreeCellRenderer();
     public AtomicReference<TreePath> treePathAtomicReference = new AtomicReference<>();
 
@@ -84,10 +88,11 @@ public class TreeView extends BorderLayoutPanel {
     private AnAction bookmarkDel = ActionManager.getInstance().getAction("bookmark_delete");
     private AnAction editAction = ActionManager.getInstance().getAction("bookmark_rename");
 
-    public TreeView(ApplicationContext app, String name) {
+    public TreeView(Project app, String name) {
         this.app= app;
         this.name = name;
         tree.setRootVisible(false);
+        tree.setFocusable(false);
         tree.addMouseListener(new MyMouseAdapter(app, this, renderer));
         nodeMapper = new NodeMapper(app, root, name);
         nodeMapper.buildTrees();
@@ -110,6 +115,10 @@ public class TreeView extends BorderLayoutPanel {
 
     public Set<DefaultMutableTreeNode> expandedList = new HashSet<>();
 
+    public void refresh() {
+        refresh(tree, treemodel, root);
+    }
+
     public void refreshData() {
         refreshExpand();
     }
@@ -121,7 +130,7 @@ public class TreeView extends BorderLayoutPanel {
         int index = parent.getIndex(selectedNode);
         parent.remove(index);
         parent.insert(selectedNode,index - 1);
-        LogUtils.nodeUp(app,"node name %s", selectedNode.node().getNodeName());
+//        LogUtils.nodeUp(app,"node name %s", selectedNode.node().getNodeName());
         refresh(tree, treemodel, root);
         tree.setSelectionPath(new TreePath(selectedNode.getPath()));
     }
@@ -133,7 +142,7 @@ public class TreeView extends BorderLayoutPanel {
         int index = parent.getIndex(selectedNode);
         parent.remove(index);
         parent.insert(selectedNode,index + 1);
-        LogUtils.nodeDown(app,"node name %s", selectedNode.node().getNodeName());
+//        LogUtils.nodeDown(app,"node name %s", selectedNode.node().getNodeName());
         refresh(tree, treemodel, root);
         tree.setSelectionPath(new TreePath(selectedNode.getPath()));
     }
@@ -182,7 +191,7 @@ public class TreeView extends BorderLayoutPanel {
         for (MyTreeNode selectedNode : selectedNodes) {
             if(selectedNode instanceof BookNode) {
                 deleteFolderChildren(selectedNode);
-                LogUtils.delNode(app,"node name %s", selectedNode.node().getNodeName());
+//                LogUtils.delNode(app,"node name %s", selectedNode.node().getNodeName());
             } else if(selectedNode instanceof FolderNode) {
                 int i = 0;
                 if(selectedNode.getChildCount() != 0) {
@@ -202,7 +211,7 @@ public class TreeView extends BorderLayoutPanel {
         if (name != null && name.length() != 0) {
             desc = tree.getSelectedNodes(MyTreeNode.class,null)[0].nodeDesc();
         }
-        String name = Messages.showInputDialog(app.getProject(), "重命名节点","重命名节点",  AllIcons.General.Add, desc, new InputValidator() {
+        String name = Messages.showInputDialog(app, "重命名节点","重命名节点",  AllIcons.General.Add, desc, new InputValidator() {
             @Override
             public boolean checkInput(@NlsSafe String inputString) {
                 return inputString != null && inputString.trim().length() > 0;
@@ -211,9 +220,9 @@ public class TreeView extends BorderLayoutPanel {
             @Override
             public boolean canClose(@NlsSafe String inputString) {
                 inputString = inputString.trim();
-                final FavoritesManager favoritesManager = FavoritesManager.getInstance(app.getProject());
+                final FavoritesManager favoritesManager = FavoritesManager.getInstance(app);
                 if (favoritesManager.getAvailableFavoritesListNames().contains(inputString)) {
-                    Messages.showErrorDialog(app.getProject(), IdeBundle.message("error.favorites.list.already.exists", new Object[]{inputString.trim()}), IdeBundle.message("title.unable.to.add.favorites.list", new Object[0]));
+                    Messages.showErrorDialog(app, IdeBundle.message("error.favorites.list.already.exists", new Object[]{inputString.trim()}), IdeBundle.message("title.unable.to.add.favorites.list", new Object[0]));
                     return false;
                 } else {
                     return inputString.length() > 0;
@@ -226,7 +235,7 @@ public class TreeView extends BorderLayoutPanel {
             selectedNode.node().setNodeName(name);
             selectedNode.setUserObject(name);
             treePathAtomicReference.set(new TreePath(selectedNode.getPath()));
-            LogUtils.renameNode(app,"node name %s", selectedNode.node().getNodeName());
+//            LogUtils.renameNode(app,"node name %s", selectedNode.node().getNodeName());
             refreshData();
         }
     }
@@ -280,7 +289,7 @@ public class TreeView extends BorderLayoutPanel {
             selectedNode.removeFromParent();
         } else {
             BookNode bn = (BookNode) selectedNode;
-            app.getProject().getUserData(BreakNode.KEY).remove(bn, (Supplier<Object>) () -> {
+            app.getUserData(BreakNode.KEY).remove(bn, (Supplier<Object>) () -> {
                 bn.removeDebugColor();
                 return null;
             });
@@ -315,7 +324,7 @@ public class TreeView extends BorderLayoutPanel {
 
 
     public void newFolder() {
-        String name = Messages.showInputDialog(app.getProject(), DGMConstant.NEW_FOLDER, DGMConstant.NEW_FOLDER,  AllIcons.Actions.NewFolder, DGMConstant.NEW_FOLDER, new InputValidator() {
+        String name = Messages.showInputDialog(app, DGMConstant.NEW_FOLDER, DGMConstant.NEW_FOLDER,  AllIcons.Actions.NewFolder, DGMConstant.NEW_FOLDER, new InputValidator() {
             @Override
             public boolean checkInput(@NlsSafe String inputString) {
                 return inputString != null && inputString.trim().length() > 0;
@@ -356,21 +365,10 @@ public class TreeView extends BorderLayoutPanel {
                 treePathAtomicReference.set(new TreePath(node.getPath()));
             }
 
-            try {
-                nodeMapper.insertNode(n);
-                LogUtils.newFolder(app,"node name %s", n.getNodeName());
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
-                throw new RuntimeException("db 操作失败");
-            }
             refreshExpand();
         }
     }
 
-
-    public ApplicationContext getApp() {
-        return app;
-    }
 
     public NodeMapper getNodeMapper() {
         return nodeMapper;
@@ -407,12 +405,25 @@ public class TreeView extends BorderLayoutPanel {
         return name;
     }
 
-    public void delete() {
+    public boolean delete() {
         int i = Messages.showYesNoDialog("删除tab后不可恢复", "删除tab", AllIcons.General.Remove);
         if (i == 0){
             for (int childCount = root.getChildCount() - 1; childCount >= 0; childCount--) {
                 deleteFolderChildren((MyTreeNode) root.getChildAt(childCount));
             }
+        }
+        return i == 0;
+    }
+
+    public void bind(String branchName) {
+        for (int childCount = root.getChildCount() - 1; childCount >= 0; childCount--) {
+            ((MyTreeNode) root.getChildAt(childCount)).bindIfNull(branchName);
+        }
+    }
+
+    public void unbind(String branchName) {
+        for (int childCount = root.getChildCount() - 1; childCount >= 0; childCount--) {
+            ((MyTreeNode) root.getChildAt(childCount)).autoUnlockOrUnbind(branchName);
         }
     }
 }

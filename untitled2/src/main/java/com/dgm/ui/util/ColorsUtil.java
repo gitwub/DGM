@@ -384,7 +384,7 @@ public class ColorsUtil {
 
 
     private static Color convertColor(String color){
-        if (CheckboxTreeCellRenderer.flow.equals(color)) {
+        if (color.equals("null") || CheckboxTreeCellRenderer.flow.equals(color)) {
             return null;
         } else {
             String[] split = color.split(",");

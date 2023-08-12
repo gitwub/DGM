@@ -7,6 +7,16 @@ package com.dgm;
  * @description
  */
 public class DGMConstant {
+    public static final String WINDOW_NAME = "DGM";
+    public static final String BIND = "绑定";
+    public static final String UNBIND = "解绑";
+
+    public static final String LOCKED = "加锁";
+    public static final String LOCKED_ = ":@加 锁@:";//防止与用户分支名重复
+    public static final String UNLOCKED = "解锁";
+
+    public static final String LOCK_BRANCH = "com.dmg.lock.branch";
+
     public static String DMG_ROOT_PATH = "root-dgm.db";
     public static String SYSTEM_FILE = "file";
     public static String STATE = "state";

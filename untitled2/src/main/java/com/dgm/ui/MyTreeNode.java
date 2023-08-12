@@ -2,6 +2,7 @@ package com.dgm.ui;
 
 import com.dgm.ApplicationContext;
 import com.dgm.db.po.Node;
+import com.intellij.openapi.project.Project;
 import com.intellij.ui.CheckedTreeNode;
 
 import javax.swing.Icon;
@@ -13,9 +14,9 @@ import javax.swing.Icon;
  * @date 2023/4/29 23:08
  * @description
  */
-public class MyTreeNode extends CheckedTreeNode {
+public abstract class MyTreeNode extends CheckedTreeNode {
 //    protected TreeView treeView;
-    protected ApplicationContext app;
+    protected Project app;
     protected Node node;
 
     public MyTreeNode(Node node) {
@@ -50,4 +51,17 @@ public class MyTreeNode extends CheckedTreeNode {
 
     }
 
+    public abstract void lock();
+
+    public abstract void unlock();
+
+    public abstract void bind(String branchName);
+
+    public abstract void unbind();
+
+    public abstract void autoLockOrBind();
+
+    public abstract void autoUnlockOrUnbind(String branchName);
+
+    public abstract void bindIfNull(String branchName);
 }

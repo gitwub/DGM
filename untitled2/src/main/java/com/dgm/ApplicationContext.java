@@ -1,5 +1,6 @@
 package com.dgm;
 
+import com.dgm.db.TabMapper;
 import com.dgm.db.po.Node;
 import com.dgm.ui.LogUtils;
 import com.dgm.ui.util.BreakNode;
@@ -20,9 +21,6 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.fileEditor.FileEditorProvider;
-import com.intellij.openapi.fileTypes.FileTypeEvent;
-import com.intellij.openapi.fileTypes.FileTypeListener;
-import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManagerListener;
 import com.intellij.openapi.project.impl.ProjectLifecycleListener;
@@ -38,10 +36,8 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.openapi.vfs.pointers.VirtualFilePointer;
 import com.intellij.openapi.vfs.pointers.VirtualFilePointerListener;
-import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.pom.Navigatable;
 import com.intellij.psi.impl.PsiElementBase;
-import com.intellij.psi.impl.include.FileIncludeIndex;
 import com.intellij.psi.impl.source.PsiFileImpl;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentManager;
@@ -69,42 +65,16 @@ import java.util.logging.Logger;
  */
 public class ApplicationContext implements Disposable{
   private static Logger logger = Logger.getLogger(ApplicationContext.class.getSimpleName());
-  private Project project;
-  private ToolWindow toolWindow;
-  public Alarm rebuildListAlarm;
-  public Alarm swingAlarm;
+  public static Alarm rebuildListAlarm = new Alarm(Alarm.ThreadToUse.POOLED_THREAD, ()->{});
+  public static Alarm swingAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, () -> {});
 
-  public ApplicationContext(Project project, ToolWindow toolWindow) {
-    this.project = project;
-    this.toolWindow = toolWindow;
-    rebuildListAlarm = new Alarm(Alarm.ThreadToUse.POOLED_THREAD, ()->{});
-    swingAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, () -> {});
-  }
 
-  public Project getProject() {
-    return project;
-  }
-
-  public ApplicationContext setProject(Project project) {
-    this.project = project;
-    return this;
-  }
-
-  public ToolWindow getToolWindow() {
-    return toolWindow;
-  }
-
-  public ApplicationContext setToolWindow(ToolWindow toolWindow) {
-    this.toolWindow = toolWindow;
-    return this;
-  }
-
-  public void addVirtualFileManagerListener(){
+  public static void addVirtualFileManagerListener(Project project){
     VirtualFileManager.getInstance().addVirtualFileManagerListener(new VirtualFileManagerListener() {
 
     });
 
-    project.getMessageBus().connect(this).subscribe(BatchFileChangeListener.TOPIC, new BatchFileChangeListener() {
+    project.getMessageBus().connect().subscribe(BatchFileChangeListener.TOPIC, new BatchFileChangeListener() {
       @Override
       public void batchChangeStarted(Project project, String activityName) {
         System.out.println("activityName = " + activityName);
@@ -115,38 +85,47 @@ public class ApplicationContext implements Disposable{
         System.out.println("activityName = ");
       }
     });
-    project.getMessageBus().connect(this).subscribe(VirtualFileManager.VFS_CHANGES,new BulkFileListener(){
+    project.getMessageBus().connect().subscribe(VirtualFileManager.VFS_CHANGES,new BulkFileListener(){
       @Override
       public void after(List<? extends VFileEvent> events) {
         //当前监听类修改xml会报错  弃用
         System.out.println("events = " + events);
-//        ((VFilePropertyChangeEvent) events.get(0)).getOldPath();
       }
     });
 
 
-    project.getMessageBus().connect(this).subscribe(VirtualFilePointerListener.TOPIC, new VirtualFilePointerListener() {
+    project.getMessageBus().connect().subscribe(VirtualFilePointerListener.TOPIC, new VirtualFilePointerListener() {
       @Override
       public void validityChanged(VirtualFilePointer[] pointers) {
         System.out.println("BookmarkToolWindow.validityChanged:"+pointers.length);
       }
     });
 
-    project.getMessageBus().connect(this).subscribe(BranchChangeListener.VCS_BRANCH_CHANGED, new BranchChangeListener() {
+    project.getMessageBus().connect().subscribe(BranchChangeListener.VCS_BRANCH_CHANGED, new BranchChangeListener() {
       @Override
-      public void branchWillChange(String s) {
-
+      public void branchWillChange(String branchName) {
+        TabMapper userData = project.getUserData(TabMapper.key);
+        if (userData != null) {
+          userData.getTabs().forEach((k,v)->{
+            v.bind(branchName);
+          });
+        }
       }
 
       @Override
-      public void branchHasChanged(String s) {
-
+      public void branchHasChanged(String branchName) {
+        TabMapper userData = project.getUserData(TabMapper.key);
+        if (userData != null) {
+          userData.getTabs().forEach((k,v)->{
+            v.unbind(branchName);
+          });
+        }
       }
     });
   }
 
-  public void addBreakpointListener(){
-    project.getMessageBus().connect(this).subscribe(XBreakpointListener.TOPIC, new XBreakpointListener<XBreakpoint<XBreakpointProperties>>() {
+  public static void addBreakpointListener(Project project){
+    project.getMessageBus().connect().subscribe(XBreakpointListener.TOPIC, new XBreakpointListener<XBreakpoint<XBreakpointProperties>>() {
       @Override
       public void breakpointAdded(XBreakpoint<XBreakpointProperties> xBreakpoint) {
         if(xBreakpoint instanceof XLineBreakpointImpl){
@@ -154,7 +133,7 @@ public class ApplicationContext implements Disposable{
           String relativePath = null;
           if(DGMConstant.SYSTEM_FILE.equals(file.getFileSystem().getProtocol())) {
             if(file.getPath().startsWith(project.getBasePath())) {//项目下文件
-              relativePath = fileRelative(file);
+              relativePath = fileRelative(project, file);
             } else {//项目外的文件
               relativePath = file.getPath();
             }
@@ -164,8 +143,8 @@ public class ApplicationContext implements Disposable{
           if(relativePath != null){
             (((XLineBreakpointImpl) xBreakpoint).getProject()).getUserData(BreakNode.KEY).checked(relativePath+":"+((XLineBreakpointImpl<?>) xBreakpoint).getLine(),true);
           }
-          if (getToolWindow().getContentManager().getSelectedContent() != null) {
-            ((TreeView) getToolWindow().getContentManager().getSelectedContent().getComponent()).refreshData();
+          if (Utils.getWindow(project).getContentManager().getSelectedContent() != null) {
+            ((TreeView) Utils.getWindow(project).getContentManager().getSelectedContent().getComponent()).refreshData();
           }
         }
       }
@@ -177,7 +156,7 @@ public class ApplicationContext implements Disposable{
           String relativePath = null;
           if(DGMConstant.SYSTEM_FILE.equals(file.getFileSystem().getProtocol())) {
             if(file.getPath().startsWith(project.getBasePath())) {//项目下文件
-              relativePath = fileRelative(file);
+              relativePath = fileRelative(project, file);
             } else {//项目外的文件
               relativePath = file.getPath();
             }
@@ -185,16 +164,16 @@ public class ApplicationContext implements Disposable{
             relativePath = jarRelative(file);
           }
           (((XLineBreakpointImpl<?>) breakpoint).getProject()).getUserData(BreakNode.KEY).checked(relativePath + ":"+ ((XLineBreakpointImpl<?>) breakpoint).getLine(),false);
-          if (getToolWindow().getContentManager().getSelectedContent() != null) {
-            ((TreeView) getToolWindow().getContentManager().getSelectedContent().getComponent()).refreshData();
+          if (Utils.getWindow(project).getContentManager().getSelectedContent() != null) {
+            ((TreeView) Utils.getWindow(project).getContentManager().getSelectedContent().getComponent()).refreshData();
           }
         }
       }
     });
   }
 
-  public void addActionListener(){
-    project.getMessageBus().connect(this).subscribe(AnActionListener.TOPIC, new AnActionListener(){
+  public static void addActionListener(Project project){
+    project.getMessageBus().connect().subscribe(AnActionListener.TOPIC, new AnActionListener(){
       @Override
       public void afterActionPerformed(AnAction action, DataContext dataContext, AnActionEvent event) {
 //        FileEditor data = event.getData(PlatformDataKeys.FILE_EDITOR);
@@ -210,13 +189,13 @@ public class ApplicationContext implements Disposable{
     });
   }
 
-  public void addFileEditorManagerListener(){
+  public static void addFileEditorManagerListener(Project project){
 
     ProjectManagerImpl.getInstance().addProjectManagerListener(project, new ProjectManagerListener() {
       @Override
       public void projectClosingBeforeSave(Project project) {
 
-        ContentManager contentManagerIfCreated = getToolWindow().getContentManagerIfCreated();
+        ContentManager contentManagerIfCreated = Utils.getWindow(project).getContentManagerIfCreated();
         if(contentManagerIfCreated != null) {
           Content[] contents = contentManagerIfCreated.getContents();
           if(contents != null) {
@@ -229,7 +208,7 @@ public class ApplicationContext implements Disposable{
         }
       }
     });
-    project.getMessageBus().connect(this).subscribe(ProjectLifecycleListener.TOPIC, new ProjectLifecycleListener() {
+    project.getMessageBus().connect().subscribe(ProjectLifecycleListener.TOPIC, new ProjectLifecycleListener() {
       @Override
       public void projectComponentsInitialized(@NotNull Project project) {
 
@@ -238,8 +217,8 @@ public class ApplicationContext implements Disposable{
 
     List<FileBasedIndexInfrastructureExtension> extensionList = FileBasedIndexInfrastructureExtension.EP_NAME.getExtensionList();
 
-    project.getMessageBus().connect(this);
-    project.getMessageBus().connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
+    project.getMessageBus().connect();
+    project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
 
       @Override
       public void fileOpenedSync(FileEditorManager source, VirtualFile file, Pair<FileEditor[], FileEditorProvider[]> editors) {
@@ -256,7 +235,7 @@ public class ApplicationContext implements Disposable{
     });
   }
 
-  public void work(Runnable runnable){
+  public static void work(Runnable runnable){
     rebuildListAlarm.addRequest(runnable,0);
   }
 
@@ -271,28 +250,28 @@ public class ApplicationContext implements Disposable{
    * @param temp
    * @return 相对路径
    */
-  public String fileRelative(VirtualFile temp ){
-    return temp.getPath().substring(getProject().getBasePath().length());
+  public static String fileRelative(Project project,VirtualFile temp ){
+    return temp.getPath().substring(project.getBasePath().length());
   }
   /**
    * 相对路径
    * @param temp
    * @return 相对路径
    */
-  public String jarRelative(VirtualFile temp ){
+  public static String jarRelative(VirtualFile temp ){
     String substring = temp.getPath().substring(VfsUtilCore.getRootFile(temp).getPath().length());
     return StringUtil.trimLeading(substring, '/');
   }
 
-  public void navigate(VirtualFile virtualFile, int line) {
+  public static void navigate(Project app, VirtualFile virtualFile, int line) {
     swingAlarm.addRequest(() -> {
       XSourcePositionImpl xSourcePosition = XSourcePositionImpl.create(virtualFile, line);
-      Navigatable navigatable = xSourcePosition.createNavigatable(getProject());
+      Navigatable navigatable = xSourcePosition.createNavigatable(app);
       navigatable.navigate(navigatable.canNavigate());
     }, 200);
   }
 
-  public void notifyError(String msg) {
+  public static void notifyError(String msg) {
     swingAlarm.addRequest(() -> {
       Notification notification = new Notification("group", AllIcons.General.Error, NotificationType.ERROR);
       notification.setContent(msg);
@@ -300,7 +279,7 @@ public class ApplicationContext implements Disposable{
     }, 100);
   }
 
-  public void rememberSelect(VirtualFile virtualFile, int line, Consumer<VirtualFile> runnable) {
+  public static void rememberSelect(Project app, VirtualFile virtualFile, int line, Consumer<VirtualFile> runnable) {
     swingAlarm.addRequest(() -> {
       Notification notification = new Notification("group", AllIcons.General.Warning, NotificationType.ERROR);
       notification.setContent("文件:" + virtualFile.getPath());
@@ -308,13 +287,13 @@ public class ApplicationContext implements Disposable{
       notification.addAction(new AnAction("跳转") {
         @Override
         public void actionPerformed(AnActionEvent anActionEvent) {
-          navigate(virtualFile, line);
+          navigate(app, virtualFile, line);
         }
       });
       notification.addAction(new AnAction("跳转并记住我的选择") {
         @Override
         public void actionPerformed(AnActionEvent anActionEvent) {
-          navigate(virtualFile, line);
+          navigate(app, virtualFile, line);
           runnable.accept(virtualFile);
         }
       });
@@ -323,7 +302,7 @@ public class ApplicationContext implements Disposable{
     }, 0);
   }
 
-  public void duplication(String path, Map<String, VirtualFile> alreadyChoose, List<FoundItemDescriptor<Object>> list, Node node, Consumer<VirtualFile> consumer) {
+  public static void duplication(Project app, String path, Map<String, VirtualFile> alreadyChoose, List<FoundItemDescriptor<Object>> list, Node node, Consumer<VirtualFile> consumer) {
 
     swingAlarm.addRequest(() -> {
       Notification notification = new Notification("com.dgm.group", AllIcons.General.Information, NotificationType.WARNING);
@@ -340,9 +319,9 @@ public class ApplicationContext implements Disposable{
 
       for (FoundItemDescriptor<Object> item : list) {
         if(item.getItem() instanceof PsiFileImpl) {
-          rememberSelect(((PsiFileImpl) item.getItem()).getVirtualFile(), node.getLineNumber(), consumer);
+          rememberSelect(app, ((PsiFileImpl) item.getItem()).getVirtualFile(), node.getLineNumber(), consumer);
         } else if(item.getItem() instanceof PsiElementBase){
-          rememberSelect(((PsiElementBase) item.getItem()).getContainingFile().getVirtualFile(), node.getLineNumber(), consumer);
+          rememberSelect(app, ((PsiElementBase) item.getItem()).getContainingFile().getVirtualFile(), node.getLineNumber(), consumer);
         }
       }
     }, 0);
@@ -353,7 +332,7 @@ public class ApplicationContext implements Disposable{
    * ui 线程
    * @param runnable
    */
-  public void ui(Runnable runnable){
+  public static void ui(Runnable runnable){
     swingAlarm.addRequest(runnable, 100);
   }
 }

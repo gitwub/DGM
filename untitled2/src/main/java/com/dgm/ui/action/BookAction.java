@@ -1,18 +1,27 @@
 package com.dgm.ui.action;
 
+import com.dgm.DGMConstant;
 import com.dgm.db.po.Node;
+import com.dgm.ui.BookNode;
 import com.dgm.ui.MyTreeNode;
 import com.dgm.ui.TreeView;
 import com.dgm.ui.renderer.CheckboxTreeCellRenderer;
 import com.dgm.ui.util.ColorsUtil;
 import com.dgm.ui.util.OverColorIcon;
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.DataManager;
+import com.intellij.ide.util.PropertiesComponent;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionGroup;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.ui.popup.ListPopup;
+import com.intellij.openapi.vcs.AbstractVcs;
+import com.intellij.openapi.vcs.VcsProjectSetProcessor;
+import com.intellij.openapi.vcs.impl.ProjectLevelVcsManagerImpl;
 import com.intellij.ui.awt.RelativePoint;
 
 import org.jetbrains.annotations.NotNull;
@@ -21,11 +30,18 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import javax.swing.Icon;
 import javax.swing.tree.TreePath;
+
+import git4idea.GitReference;
+import git4idea.repo.GitRepository;
+import git4idea.repo.GitRepositoryImpl;
+import git4idea.repo.GitRepositoryInitializer;
 
 import static com.intellij.openapi.ui.popup.JBPopupFactory.ActionSelectionAid.MNEMONICS;
 
@@ -106,9 +122,109 @@ public class BookAction {
         ActionGroup actionGroup2 = new ActionGroup() {
             @Override
             public AnAction[] getChildren(@Nullable AnActionEvent anActionEvent) {
-                return new AnAction[] {textColorGroup, styleColorGroup, styleGroup,
-                        editorTextColor,editorBgColor, editorStyle,editorSytleColor
-                };
+                TreePath selectionPath = treeView.getTree().getSelectionPath();
+                MyTreeNode lastPathComponent = (MyTreeNode) selectionPath.getLastPathComponent();
+
+                if (ProjectLevelVcsManagerImpl.getInstanceEx(anActionEvent.getProject()).checkVcsIsActive("Git")) {
+                    GitRepository instance = GitRepositoryImpl.createInstance(anActionEvent.getProject().getBaseDir(), anActionEvent.getProject(), new Disposable() {
+                        @Override
+                        public void dispose() {
+
+                        }
+                    }, false);
+                    if(lastPathComponent instanceof BookNode) {
+                        ArrayList<AnAction> actions = new ArrayList<>();
+                        if(DGMConstant.LOCKED_.equals(lastPathComponent.node().getLocked())) { //已加锁
+                            actions.add(new AnAction(()-> DGMConstant.UNLOCKED) {
+                                @Override
+                                public void actionPerformed(@NotNull AnActionEvent e) {
+                                    lastPathComponent.unlock();
+                                }
+                            });
+                        } else if (lastPathComponent.node().getLocked() != null) {//已绑定
+                            actions.add(new AnAction(()-> DGMConstant.UNBIND) {
+                                @Override
+                                public void actionPerformed(@NotNull AnActionEvent e) {
+                                    lastPathComponent.unbind();
+                                }
+                            });
+                        } else {//无状态
+                            actions.add(new ActionGroup(DGMConstant.BIND,true) {
+                                @Override
+                                public AnAction[] getChildren(@Nullable AnActionEvent anActionEvent) {
+                                    return instance.getBranches().getLocalBranches()
+                                            .stream()
+                                            .map(GitReference::getName)
+                                            .filter(e -> !e.equals(instance.getCurrentBranch().getName()))
+                                            .map(e -> new AnAction(e) {
+                                                @Override
+                                                public void actionPerformed(@NotNull AnActionEvent e) {
+                                                    lastPathComponent.bind(e.getPresentation().getText());
+                                                }
+                                            }).collect(Collectors.toList()).toArray(new AnAction[]{});
+                                }
+                            });
+                            actions.add(new AnAction(()->DGMConstant.LOCKED) {
+                                @Override
+                                public void actionPerformed(@NotNull AnActionEvent e) {
+                                    lastPathComponent.lock();
+                                }
+                            });
+                        }
+                        actions.add(textColorGroup);
+                        actions.add(styleColorGroup);
+                        actions.add(styleGroup);
+                        actions.add(editorTextColor);
+                        actions.add(editorBgColor);
+                        actions.add(editorStyle);
+                        actions.add(editorSytleColor);
+                        return actions.toArray(new AnAction[]{});
+                    } else {
+                        return new AnAction[] {
+                                new ActionGroup(DGMConstant.BIND,true) {
+                                    @Override
+                                    public AnAction[] getChildren(@Nullable AnActionEvent anActionEvent) {
+                                        return instance.getBranches().getLocalBranches()
+                                                .stream()
+                                                .map(GitReference::getName)
+                                                .filter(e -> !e.equals(instance.getCurrentBranch().getName()))
+                                                .map(e -> new AnAction(e) {
+                                                    @Override
+                                                    public void actionPerformed(@NotNull AnActionEvent e) {
+                                                        lastPathComponent.bind(e.getPresentation().getText());
+                                                    }
+                                                }).collect(Collectors.toList()).toArray(new AnAction[]{});
+                                    }
+                                },
+                                new AnAction(()->DGMConstant.UNBIND) {
+                                    @Override
+                                    public void actionPerformed(@NotNull AnActionEvent e) {
+                                        lastPathComponent.unbind();
+                                    }
+                                },
+                                new AnAction(()->DGMConstant.LOCKED) {
+                                    @Override
+                                    public void actionPerformed(@NotNull AnActionEvent e) {
+                                        lastPathComponent.lock();
+                                    }
+                                },
+                                new AnAction(()->DGMConstant.UNLOCKED) {
+                                    @Override
+                                    public void actionPerformed(@NotNull AnActionEvent e) {
+                                        lastPathComponent.unlock();
+                                    }
+                                },
+                                textColorGroup, styleColorGroup, styleGroup,
+                                editorTextColor,editorBgColor, editorStyle,editorSytleColor
+                        };
+                    }
+
+                } else {
+                    return new AnAction[] {
+                            textColorGroup, styleColorGroup, styleGroup,
+                            editorTextColor,editorBgColor, editorStyle,editorSytleColor
+                    };
+                }
             }
         };
 

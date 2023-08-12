@@ -8,25 +8,53 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.editor.colors.EditorColorsListener;
+import com.intellij.openapi.editor.colors.EditorColorsManager;
+import com.intellij.openapi.editor.colors.EditorColorsScheme;
+import com.intellij.openapi.editor.event.EditorFactoryEvent;
+import com.intellij.openapi.editor.event.EditorFactoryListener;
+import com.intellij.openapi.editor.impl.EditorImpl;
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
+import com.intellij.openapi.fileEditor.FileEditorManagerListener;
+import com.intellij.openapi.fileEditor.impl.EditorComposite;
+import com.intellij.openapi.fileEditor.impl.EditorWindow;
+import com.intellij.openapi.fileEditor.impl.EditorWithProviderComposite;
+import com.intellij.openapi.fileEditor.impl.PsiAwareFileEditorManagerImpl;
+import com.intellij.openapi.fileTypes.FileTypeEvent;
+import com.intellij.openapi.fileTypes.FileTypeListener;
+import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.DumbServiceImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManagerListener;
+import com.intellij.openapi.project.impl.ProjectExImpl;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowEP;
 import com.intellij.openapi.wm.ToolWindowFactory;
+import com.intellij.openapi.wm.impl.ToolWindowManagerImpl;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.ContentManagerEvent;
 import com.intellij.ui.content.ContentManagerListener;
 import com.intellij.util.indexing.FileBasedIndexImpl;
+import com.intellij.util.indexing.diagnostic.ProjectIndexingHistory;
+import com.intellij.util.indexing.diagnostic.ProjectIndexingHistoryListener;
+import com.intellij.util.keyFMap.KeyFMap;
 import com.intellij.util.ui.AnimatedIcon;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.awt.BorderLayout;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
@@ -50,39 +78,18 @@ import static com.intellij.icons.AllIcons.Process.Big.Step_8;
  * @date 2023/4/18 0:34
  * @description
  */
-public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManagerListener, Runnable {
+public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManagerListener, Runnable, ProjectIndexingHistoryListener {
   private Logger logger = Logger.getLogger(DGMToolWindow.class.getSimpleName());
   public static Key<JComponent> windowComponent = new Key(DGMToolWindow.class.getName());
   public static Key<ApplicationContext> key = new Key(DGMToolWindow.class.getName());
   public static Key<ContentManagerListener> keyLis = new Key(ContentManagerListener.class.getName());
-  /**
-   * app 对象每词
-   */
-  private AtomicReference<ApplicationContext> reference = new AtomicReference<>();
-  private Set<ApplicationContext> apps = new HashSet<>();
+
   @Override
   public void createToolWindowContent(Project project, ToolWindow toolWindow) {
-    ApplicationContext app = new ApplicationContext(project, toolWindow);
-    LogUtils.app(app);
-    Disposer.register(toolWindow.getDisposable(), app);
-
-    loading(app);
-    ApplicationManager.getApplication().runWriteAction(()->{
-      app.work(()->{
-        try {
-          while (DumbServiceImpl.getInstance(project).isDumb() && FileBasedIndexImpl.getInstance().getCurrentDumbModeAccessType() == null) {
-            Thread.sleep(100);
-          }
-          Thread.sleep(3000);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      });
-      DumbServiceImpl.getInstance(project).smartInvokeLater(launch(app));
-    });
+    loading(toolWindow);
   }
 
-  private void loading(ApplicationContext app) {
+  private void loading(ToolWindow app) {
     Icon passive = AllIcons.Process.Big.Step_passive;
     Icon[] icons = {Step_1,Step_2,Step_3,Step_4,Step_5,Step_6,Step_7,Step_8};
     JPanel panel = new JPanel(new BorderLayout());
@@ -92,17 +99,17 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
 
     ContentFactory instance = ContentFactory.SERVICE.getInstance();
     Content content = instance.createContent(panel, "loading", true);
-    app.getToolWindow().getContentManager().addContent(content);
+    app.getContentManager().addContent(content);
   }
 
 
-  private void addAction(ApplicationContext app) {
+  private void addAction(Project app) {
     ArrayList<AnAction> objects = new ArrayList<>();
     objects.add(ActionManager.getInstance().getAction("new_tab"));
     objects.add(ActionManager.getInstance().getAction("tab_left"));
     objects.add(ActionManager.getInstance().getAction("tab_right"));
     objects.add(ActionManager.getInstance().getAction("tab_delete"));
-    app.getToolWindow().setTitleActions(objects);
+    ToolWindowManagerImpl.getInstance(app).getToolWindow("DGM").setTitleActions(objects);
   }
 
 
@@ -120,45 +127,55 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public void run() {
   }
 
-  public Runnable launch(ApplicationContext app){
-    return ()->{
 
-      app.getProject().putUserData(windowComponent, app.getToolWindow().getComponent());
+  @Override
+  public void onFinishedIndexing(@NotNull ProjectIndexingHistory projectIndexingHistory) {
+    if (projectIndexingHistory.getTimes().getIndexingReason().equals("On project open")) {
+      ApplicationContext.ui(()-> openWindow(projectIndexingHistory.getProject()));
+    }
+  }
 
-      app.getProject().putUserData(keyLis, new ContentManagerListener() {
-        @Override
-        public void selectionChanged(ContentManagerEvent event) {
-          logger.info(""+event.getIndex());
-          app.getProject().getUserData(TabMapper.key).active(event.getIndex());
-          ContentManager contentManager = app.getToolWindow().getContentManager();
-          if(contentManager.getSelectedContent() != null){
-            JComponent component = contentManager.getSelectedContent().getComponent();
-            if (component != null) {
-              app.getProject().putUserData(TreeView.key, (TreeView) component);
-            }
+
+  private void openWindow(Project project) {
+    project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
+      @Override
+      public void selectionChanged(@NotNull FileEditorManagerEvent event) {
+
+      }
+    });
+    project.putUserData(windowComponent, Utils.getWindow(project).getComponent());
+
+    project.putUserData(keyLis, new ContentManagerListener() {
+      @Override
+      public void selectionChanged(ContentManagerEvent event) {
+        logger.info("" + event.getIndex());
+        project.getUserData(TabMapper.key).active(event.getIndex());
+        ContentManager contentManager = Utils.getWindow(project).getContentManager();
+        if (contentManager.getSelectedContent() != null) {
+          JComponent component = contentManager.getSelectedContent().getComponent();
+          if (component != null) {
+            project.putUserData(TreeView.key, (TreeView) component);
           }
         }
-      });
-      app.getToolWindow().getContentManager().addContentManagerListener(app.getProject().getUserData(keyLis));
+      }
+    });
+    Utils.getWindow(project).getContentManager().addContentManagerListener(project.getUserData(keyLis));
 
-//      PersistingUtil persistingUtil = new PersistingUtil(app);
-//      Disposer.register(app, persistingUtil);
-//      persistingUtil.createRootBookmark();
-//      app.getProject().putUserData(PersistingUtil.KEY, persistingUtil);
 
-      app.getProject().putUserData(DGMToolWindow.key, app);
-      app.getProject().putUserData(BreakNode.KEY, new BreakNode());
+    project.putUserData(BreakNode.KEY, new BreakNode());
 
-      app.addVirtualFileManagerListener();
-      app.addBreakpointListener();
-      app.addActionListener();
-      app.addFileEditorManagerListener();
-      addAction(app);
+    ApplicationContext.addVirtualFileManagerListener(project);
+    ApplicationContext.addBreakpointListener(project);
+    ApplicationContext.addActionListener(project);
+    ApplicationContext.addFileEditorManagerListener(project);
+    addAction(project);
 
-      TabMapper tabMapper = new TabMapper(app);
-      Disposer.register(app, tabMapper);
-      app.getProject().putUserData(TabMapper.key, tabMapper);
-      tabMapper.refresh();
-    };
+    TabMapper tabMapper = new TabMapper(project);
+    project.putUserData(TabMapper.key, tabMapper);
+    tabMapper.refresh();
+  }
+  @Override
+  public void onStartedIndexing(@NotNull ProjectIndexingHistory projectIndexingHistory) {
+
   }
 }

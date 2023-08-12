@@ -1,15 +1,19 @@
 package com.dgm.ui.renderer;
 
+import com.dgm.DGMConstant;
 import com.dgm.ui.FolderNode;
 import com.dgm.ui.MyTreeNode;
 import com.dgm.ui.BookNode;
 import com.dgm.db.po.Node;
 import com.dgm.ui.util.ColorsUtil;
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.util.treeView.NodeRenderer;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.ui.CheckedTreeNode;
 import com.intellij.ui.ColoredTreeCellRenderer;
+import com.intellij.ui.SimpleColoredComponent;
 import com.intellij.ui.SimpleTextAttributes;
+import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.ThreeStateCheckBox;
 import com.intellij.util.ui.UIUtil;
 import com.intellij.util.ui.accessibility.AccessibleContextDelegate;
@@ -29,6 +33,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
 
+import static java.awt.BorderLayout.CENTER;
+import static java.awt.BorderLayout.EAST;
+import static java.awt.BorderLayout.WEST;
+
 /**
  * @author 王银飞
  * @email 371964363@qq.com
@@ -38,6 +46,7 @@ import javax.swing.tree.TreeNode;
 public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer {
     private final ColoredTreeCellRenderer myTextRenderer;
     public final ThreeStateCheckBox myCheckbox;
+    public final JBLabel locked;
     public static final String flow = "跟随";
     private final boolean myUsePartialStatusForParentNodes;
     protected boolean myIgnoreInheritance;
@@ -50,6 +59,7 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
         super(new BorderLayout());
         this.myUsePartialStatusForParentNodes = usePartialStatusForParentNodes;
         this.myCheckbox = new ThreeStateCheckBox();
+        this.locked = new JBLabel();
         this.myCheckbox.setSelected(false);
         this.myCheckbox.setThirdStateEnabled(false);
         this.myTextRenderer = new NodeRenderer() {
@@ -70,8 +80,9 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
             }
         };
         this.myTextRenderer.setOpaque(opaque);
-        this.add(this.myCheckbox, "West");
-        this.add(this.myTextRenderer, "Center");
+        this.add(this.myCheckbox, WEST);
+        this.add(this.myTextRenderer, CENTER);
+        this.add(this.locked, EAST);
     }
 
     public CheckboxTreeCellRenderer() {
@@ -101,6 +112,16 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
                 this.myCheckbox.getModel().setPressed(pressedValue == value);
             }
 //            append("12313123", ERROR_ATTRIBUTES);
+
+            if(DGMConstant.LOCKED_.equals(((MyTreeNode) value).node().getLocked())) {
+                this.locked.setIcon(AllIcons.Nodes.Padlock);
+                this.locked.setText(null);
+            } else {
+                this.locked.setIcon(AllIcons.Vcs.Branch);
+                this.locked.setText(((MyTreeNode) value).node().getLocked());
+            }
+            this.locked.setOpaque(false);
+            this.locked.setVisible(((MyTreeNode) value).node().getLocked() != null);
         } else {
             this.myCheckbox.setVisible(false);
         }

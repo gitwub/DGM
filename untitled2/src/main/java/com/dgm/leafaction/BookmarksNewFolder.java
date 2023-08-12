@@ -2,6 +2,7 @@ package com.dgm.leafaction;
 
 import com.dgm.ApplicationContext;
 import com.dgm.DGMToolWindow;
+import com.dgm.Utils;
 import com.dgm.ui.TreeView;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.DumbAware;
@@ -19,8 +20,7 @@ public class BookmarksNewFolder extends MyAnAction implements DumbAware {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
-        ApplicationContext app = anActionEvent.getProject().getUserData(DGMToolWindow.key);
-        TreeView treeView = (TreeView) app.getToolWindow().getContentManager().getSelectedContent().getComponent();
+        TreeView treeView = (TreeView)  Utils.getWindow(anActionEvent.getProject()).getContentManager().getSelectedContent().getComponent();
         treeView.newFolder();
     }
 
