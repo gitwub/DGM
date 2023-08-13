@@ -40,19 +40,30 @@ import com.intellij.psi.impl.PsiElementBase;
 import com.intellij.psi.impl.source.PsiFileImpl;
 import com.intellij.psi.search.ProjectAndLibrariesScope;
 import com.intellij.ui.IconManager;
+import com.intellij.util.containers.BidirectionalMap;
 import com.intellij.util.ui.ThreeStateCheckBox;
+import com.intellij.xdebugger.XDebuggerManager;
+import com.intellij.xdebugger.XDebuggerUtil;
 import com.intellij.xdebugger.XSourcePosition;
 import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.impl.XDebuggerManagerImpl;
 import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase;
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
+import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointImpl;
+import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointManager;
 import com.intellij.xdebugger.ui.DebuggerColors;
 
 
 import java.awt.Color;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -339,9 +350,6 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
             rangeHighlighterEx.setTextAttributes(attributes);
         }
 
-        if(node.isChecked()) {
-            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
-        }
     }
 
     @Override
@@ -487,18 +495,12 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         if (node.getLocked() == null) {
             node.setLocked(DGMConstant.LOCKED_);
         }
-        if(node.isChecked()) {
-            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
-        }
     }
 
     @Override
     public void unlock() {
         if (node.getLocked() != null) {
             node.setLocked(null);
-        }
-        if(node.isChecked()) {
-            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
         }
     }
 
@@ -510,6 +512,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         if(node.getLocked() == null) {
             node.setLocked(branchName);
             removeEditorState();
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, false);
         }
     }
 
@@ -518,9 +521,6 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         if(node.getLocked() != null && !DGMConstant.LOCKED_.equals(node.getLocked())) {
             node.setLocked(null);
             addEditorState();
-        }
-        if(node.isChecked()) {
-            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
         }
     }
 

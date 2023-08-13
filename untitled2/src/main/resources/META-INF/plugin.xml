@@ -33,9 +33,6 @@
     <projectIndexingHistoryListener implementation="com.dgm.DGMToolWindow"/>
   </extensions>
 
-  <applicationListeners>
-    <listener class="com.dgm.MyProjectManager" topic="com.intellij.openapi.project.ProjectManagerListener"/>
-  </applicationListeners>
 
   <extensions defaultExtensionNs="Git4Idea">
     <!-- Add your extensions here -->

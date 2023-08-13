@@ -10,7 +10,6 @@ plugins {
     id 'java-library'
 }
 intellij {
-//    version = "2020.3.2"
     version = "2021.3.1"
     plugins = ['Git4Idea']
     type = "IC"
@@ -49,7 +48,7 @@ task myProguardTask(type: proguard.gradle.ProGuardTask) {
     //引入依赖库
 //    libraryjars files('D:\\software\\ideaIU\\lib\\rt.jar')
     libraryjars files('C:\\Users\\1\\.jdks\\corretto-11.0.20\\jmods\\')
-    libraryjars files('D:\\develop\\idea\\ideaIU-2020.3.2.win\\lib\\')
+    libraryjars files('C:\\Users\\1\\.gradle\\caches\\modules-2\\files-2.1\\com.jetbrains.intellij.idea\\ideaIC\\2021.3.1\\c2ea6f6a9dee8ad102f889942471eb402f1c7a5a\\ideaIC-2021.3.1\\lib\\')
 //    libraryjars files('D:\\software\\java\\jdk8\\jre\\lib\\')
 //    libraryjars files('C:\\Users\\王银飞\\.gradle\\caches\\modules-2\\files-2.1\\com.jetbrains.intellij.idea\\ideaIC\\2020.3.2\\13938c2ba003ffe980f450345eea516cd9c2375f\\ideaIC-2020.3.2\\lib\\')
 

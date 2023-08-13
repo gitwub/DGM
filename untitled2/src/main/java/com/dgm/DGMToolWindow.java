@@ -84,7 +84,6 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public static Key<JComponent> windowComponent = new Key(DGMToolWindow.class.getName());
   public static Key<ApplicationContext> key = new Key(DGMToolWindow.class.getName());
   public static Key<ContentManagerListener> keyLis = new Key(ContentManagerListener.class.getName());
-  public static Key<Boolean> checkoutBranch = new Key("checkout branch");
 
   @Override
   public void createToolWindowContent(Project project, ToolWindow toolWindow) {
