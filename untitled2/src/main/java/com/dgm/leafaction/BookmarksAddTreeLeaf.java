@@ -1,29 +1,15 @@
 package com.dgm.leafaction;
 
-import com.dgm.ApplicationContext;
-import com.dgm.DGMToolWindow;
 import com.dgm.DGMConstant;
 import com.dgm.Utils;
 import com.dgm.db.po.Node;
 import com.dgm.ui.BookNode;
 import com.dgm.ui.FolderNode;
-import com.dgm.ui.LogUtils;
 import com.dgm.ui.MyTreeNode;
 import com.dgm.ui.TreeView;
 import com.dgm.ui.util.BreakNode;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.actionSystem.DataKey;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.impl.DocumentImpl;
-import com.intellij.openapi.editor.impl.EditorFactoryImpl;
-import com.intellij.openapi.editor.impl.EditorImpl;
-import com.intellij.openapi.fileEditor.FileDocumentManager;
-import com.intellij.openapi.fileEditor.FileEditor;
-import com.intellij.openapi.fileEditor.FileEditorManager;
-import com.intellij.openapi.fileEditor.TextEditor;
-import com.intellij.openapi.fileEditor.impl.text.PsiAwareTextEditorImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.content.ContentManager;
 

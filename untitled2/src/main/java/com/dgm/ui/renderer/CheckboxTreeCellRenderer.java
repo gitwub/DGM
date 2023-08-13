@@ -93,23 +93,27 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
         if (value instanceof MyTreeNode) {
             MyTreeNode node = (MyTreeNode) value;
-            this.myCheckbox.setVisible(node.isEnabled());
-            this.myCheckbox.setEnabled(node.isEnabled());
-            if (value instanceof BookNode) {
-                this.myCheckbox.setSelected(node.isChecked());
-                this.myCheckbox.setState(((BookNode) value).getState());
+            if(((MyTreeNode) value).node().getLocked() == null || ((MyTreeNode) value).node().getLocked().equals(DGMConstant.LOCKED_)) {
+                this.myCheckbox.setVisible(node.isEnabled());
+                this.myCheckbox.setEnabled(node.isEnabled());
+                if (value instanceof BookNode) {
+                    this.myCheckbox.setSelected(node.isChecked());
+                    this.myCheckbox.setState(((BookNode) value).getState());
+                } else {
+                    this.myCheckbox.setEnabled(true);
+                    this.myCheckbox.setSelected(getNodeStatus(node) == ThreeStateCheckBox.State.SELECTED);
+                }
+                this.myCheckbox.setOpaque(false);
+                this.myCheckbox.setBackground(null);
+                this.myCheckbox.setForeground(Color.RED);
+                if (UIUtil.isUnderWin10LookAndFeel()) {
+                    Object hoverValue = this.getClientProperty("JCheckBox.rollOver.rectangle");
+                    this.myCheckbox.getModel().setRollover(hoverValue == value);
+                    Object pressedValue = this.getClientProperty("JCheckBox.pressed.rectangle");
+                    this.myCheckbox.getModel().setPressed(pressedValue == value);
+                }
             } else {
-                this.myCheckbox.setEnabled(true);
-                this.myCheckbox.setSelected(getNodeStatus(node) == ThreeStateCheckBox.State.SELECTED);
-            }
-            this.myCheckbox.setOpaque(false);
-            this.myCheckbox.setBackground(null);
-            this.myCheckbox.setForeground(Color.RED);
-            if (UIUtil.isUnderWin10LookAndFeel()) {
-                Object hoverValue = this.getClientProperty("JCheckBox.rollOver.rectangle");
-                this.myCheckbox.getModel().setRollover(hoverValue == value);
-                Object pressedValue = this.getClientProperty("JCheckBox.pressed.rectangle");
-                this.myCheckbox.getModel().setPressed(pressedValue == value);
+                this.myCheckbox.setVisible(false);
             }
 //            append("12313123", ERROR_ATTRIBUTES);
 

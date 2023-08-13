@@ -63,6 +63,9 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.tree.TreePath;
 
+import git4idea.repo.GitRepository;
+import git4idea.repo.GitRepositoryImpl;
+
 
 /**
  * @author 王银飞
@@ -111,7 +114,7 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                 virtualFile.set(fileSystem.findFileByPath(path));
                 addDebugAndChangeListener();
             }
-            addEditorState();
+            initNodeEditorState();
         } else if (DGMConstant.JAR.equals(protocol) || DGMConstant.JRT.equals(protocol)) {
             JButton button = new JButton();
             AtomicReference<List> reference = new AtomicReference();
@@ -126,11 +129,11 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                             if(list.get(0).getItem() instanceof  PsiFileImpl) {
                                 virtualFile.set(((PsiFileImpl) list.get(0).getItem()).getVirtualFile());
                                 addDebugAndChangeListener();
-                                addEditorState();
+                                initNodeEditorState();
                             } else if(list.get(0).getItem() instanceof PsiElementBase){
                                 virtualFile.set(((PsiElementBase) list.get(0).getItem()).getContainingFile().getVirtualFile());
                                 addDebugAndChangeListener();
-                                addEditorState();
+                                initNodeEditorState();
                             }
                         });
                     } else {
@@ -138,13 +141,13 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
                             ApplicationContext.ui(() -> {
                                 virtualFile.set(alreadyChoose.get(path));
                                 addDebugAndChangeListener();
-                                addEditorState();
+                                initNodeEditorState();
                             });
                         } else {
                             Consumer<VirtualFile> runnable = e->{
                                 alreadyChoose.put(path, e);
                                 addDebugAndChangeListener();
-                                addEditorState();
+                                initNodeEditorState();
                             };
                             ApplicationContext.duplication(app, path, alreadyChoose, list, node, runnable);
                         }
@@ -285,6 +288,12 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         rangeHighlighterEx = null;
     }
 
+    public void initNodeEditorState() {
+        if(node.getLocked() == null || node.getLocked().equals(DGMConstant.LOCKED_)) {
+            addEditorState();
+        }
+    }
+
     @Override
     public void addEditorState() {
         if (this.searchable || virtualFile.get() == null) {
@@ -330,6 +339,9 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
             rangeHighlighterEx.setTextAttributes(attributes);
         }
 
+        if(node.isChecked()) {
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
+        }
     }
 
     @Override
@@ -475,12 +487,18 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         if (node.getLocked() == null) {
             node.setLocked(DGMConstant.LOCKED_);
         }
+        if(node.isChecked()) {
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
+        }
     }
 
     @Override
     public void unlock() {
         if (node.getLocked() != null) {
             node.setLocked(null);
+        }
+        if(node.isChecked()) {
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
         }
     }
 
@@ -500,6 +518,9 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         if(node.getLocked() != null && !DGMConstant.LOCKED_.equals(node.getLocked())) {
             node.setLocked(null);
             addEditorState();
+        }
+        if(node.isChecked()) {
+            XDebuggerUtilImpl.getInstance().toggleLineBreakpoint(app, virtualFile.get(), lineNumber, true);
         }
     }
 

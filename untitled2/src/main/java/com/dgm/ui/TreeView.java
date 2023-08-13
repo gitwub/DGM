@@ -339,6 +339,7 @@ public class TreeView extends BorderLayoutPanel {
             Node n = new Node();
             n.setId(nodeMapper.getNodeId());
             n.setNodeName(name);
+            n.setOriginText(name);
             n.setDgmType(DGMConstant.NODE_GROUP);
             n.setState(DGMConstant.NODE_EXPANDED);
             MyTreeNode node = new FolderNode(app, n);

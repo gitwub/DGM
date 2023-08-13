@@ -36,6 +36,7 @@ import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowEP;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.openapi.wm.impl.ToolWindowManagerImpl;
+import com.intellij.ui.components.labels.BoldLabel;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
@@ -83,6 +84,7 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public static Key<JComponent> windowComponent = new Key(DGMToolWindow.class.getName());
   public static Key<ApplicationContext> key = new Key(DGMToolWindow.class.getName());
   public static Key<ContentManagerListener> keyLis = new Key(ContentManagerListener.class.getName());
+  public static Key<Boolean> checkoutBranch = new Key("checkout branch");
 
   @Override
   public void createToolWindowContent(Project project, ToolWindow toolWindow) {

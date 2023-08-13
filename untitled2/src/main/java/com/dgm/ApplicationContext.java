@@ -46,6 +46,8 @@ import com.intellij.util.indexing.FileBasedIndexInfrastructureExtension;
 import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.breakpoints.XBreakpointListener;
 import com.intellij.xdebugger.breakpoints.XBreakpointProperties;
+import com.intellij.xdebugger.impl.XDebuggerManagerImpl;
+import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.XSourcePositionImpl;
 import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointImpl;
 
@@ -110,10 +112,16 @@ public class ApplicationContext implements Disposable{
             v.bind(branchName);
           });
         }
+        project.putUserData(DGMToolWindow.checkoutBranch, true);
+        XBreakpoint<?>[] allBreakpoints = XDebuggerManagerImpl.getInstance(project).getBreakpointManager().getAllBreakpoints();
+        for (XBreakpoint<?> allBreakpoint : allBreakpoints) {
+          XDebuggerUtilImpl.getInstance().removeBreakpoint(project,allBreakpoint);
+        }
       }
 
       @Override
       public void branchHasChanged(String branchName) {
+        project.putUserData(DGMToolWindow.checkoutBranch, false);
         TabMapper userData = project.getUserData(TabMapper.key);
         if (userData != null) {
           userData.getTabs().forEach((k,v)->{
@@ -163,7 +171,10 @@ public class ApplicationContext implements Disposable{
           } else if (DGMConstant.JAR.equals(file.getFileSystem().getProtocol()) || DGMConstant.JRT.equals(file.getFileSystem().getProtocol())) {
             relativePath = jarRelative(file);
           }
-          (((XLineBreakpointImpl<?>) breakpoint).getProject()).getUserData(BreakNode.KEY).checked(relativePath + ":"+ ((XLineBreakpointImpl<?>) breakpoint).getLine(),false);
+          Boolean userData = project.getUserData(DGMToolWindow.checkoutBranch);
+          if(userData == null || !userData) {
+            (((XLineBreakpointImpl<?>) breakpoint).getProject()).getUserData(BreakNode.KEY).checked(relativePath + ":"+ ((XLineBreakpointImpl<?>) breakpoint).getLine(),false);
+          }
           if (Utils.getWindow(project).getContentManager().getSelectedContent() != null) {
             ((TreeView) Utils.getWindow(project).getContentManager().getSelectedContent().getComponent()).refreshData();
           }

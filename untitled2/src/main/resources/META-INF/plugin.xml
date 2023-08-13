@@ -9,7 +9,7 @@
   <description>
     <![CDATA[
       A SIMPLE BREAKPOINT BOOKMARK GROUPING MANAGER THAT SUPPORTS JAVA BREAKPOINT MANAGEMENT
-      The shortcut key ctr+shift+F11 adds a bookmark, if it does not take effect, please check the shortcut bookmark group manager group under Add a bookmark
+      The shortcut key control shift alt + F11 adds a bookmark, if it does not take effect, please check the shortcut bookmark group manager group under Add a bookmark
       Bookmark group manager, support multiple tabs, support Java class file debug breakpoint, file changes (including git file merge) automatically followed
     ]]>
   </description>
@@ -53,15 +53,15 @@
     </action>
 
     <action id="bookmark_delete" class="com.dgm.leafaction.BookmarksDelete" icon="AllIcons.Actions.DeleteTag">
-      <keyboard-shortcut first-keystroke="alt DELETE" keymap="$default"/>
+      <keyboard-shortcut first-keystroke="control shift alt DELETE" keymap="$default"/>
     </action>
     <action id="new_folder" class="com.dgm.leafaction.BookmarksNewFolder" icon="AllIcons.Actions.NewFolder"/>
     <action id="group_collapse" class="com.dgm.leafaction.BookmarkCollapseall" icon="AllIcons.Actions.Refresh"/>
     <action id="bookmark_up" class="com.dgm.leafaction.BookmarksUpTreeLeaf" icon="AllIcons.General.ArrowUp">
-      <keyboard-shortcut first-keystroke="alt UP" keymap="$default"/>
+      <keyboard-shortcut first-keystroke="control shift alt UP" keymap="$default"/>
     </action>
     <action id="bookmark_down" class="com.dgm.leafaction.BookmarksDownTreeLeaf" icon="AllIcons.General.ArrowDown">
-      <keyboard-shortcut first-keystroke="alt DOWN" keymap="$default"/>
+      <keyboard-shortcut first-keystroke="control shift alt DOWN" keymap="$default"/>
     </action>
     <action id="bookmark_rename" class="com.dgm.leafaction.BookmarksRenameTreeLeaf" icon="AllIcons.Actions.EditSource">
       <!--<keyboard-shortcut first-keystroke="control shift F2" keymap="$default"/>-->
