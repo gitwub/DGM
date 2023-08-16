@@ -64,4 +64,7 @@ public abstract class MyTreeNode extends CheckedTreeNode {
     public abstract void autoUnlockOrUnbind(String branchName);
 
     public abstract void bindIfNull(String branchName);
+
+    public abstract void debug();
+
 }

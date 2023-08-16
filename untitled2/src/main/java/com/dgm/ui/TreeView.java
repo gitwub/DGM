@@ -427,4 +427,10 @@ public class TreeView extends BorderLayoutPanel {
             ((MyTreeNode) root.getChildAt(childCount)).autoUnlockOrUnbind(branchName);
         }
     }
+
+    public void debug() {
+        for (int childCount = root.getChildCount() - 1; childCount >= 0; childCount--) {
+            ((MyTreeNode) root.getChildAt(childCount)).debug();
+        }
+    }
 }

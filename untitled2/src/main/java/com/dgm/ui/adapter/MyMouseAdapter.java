@@ -1,6 +1,5 @@
 package com.dgm.ui.adapter;
 
-import com.dgm.ApplicationContext;
 import com.dgm.ui.BookNode;
 import com.dgm.ui.util.BreakNode;
 import com.dgm.ui.FolderNode;
@@ -82,9 +81,8 @@ public class MyMouseAdapter extends MouseAdapter {
                                 ArrayList<Boolean> objects = new ArrayList<>();
                                 while (children.hasMoreElements()) {
                                     MyTreeNode item = (MyTreeNode) (children.nextElement());
-                                    objects.add(item.isChecked());
-                                    if(!item.isChecked()) {
-                                        break;
+                                    if (item.isEnabled()) {
+                                        objects.add(item.isChecked());
                                     }
                                 }
 
@@ -99,6 +97,7 @@ public class MyMouseAdapter extends MouseAdapter {
                         treeView.treePathAtomicReference.set(null);
                         treeView.getTree().clearSelection();
                     }
+                    treeView.refresh();
                 }
             }
 

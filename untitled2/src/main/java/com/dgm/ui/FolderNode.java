@@ -192,4 +192,22 @@ public class FolderNode extends MyTreeNode {
             bn.bindIfNull(branchName);
         }
     }
+
+    @Override
+    public void debug() {
+        debugNode(this);
+    }
+
+    public void debugNode(MyTreeNode selectedNode) {
+        if(selectedNode instanceof FolderNode) {
+            int childCount = selectedNode.getChildCount();
+            for (int i = 0; i < childCount; i++) {
+                MyTreeNode treeNode = (MyTreeNode) selectedNode.getChildAt(childCount - (i+1));
+                debugNode(treeNode);
+            }
+        } else {
+            BookNode bn = (BookNode) selectedNode;
+            bn.debug();
+        }
+    }
 }

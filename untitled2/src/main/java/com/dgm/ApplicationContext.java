@@ -2,10 +2,10 @@ package com.dgm;
 
 import com.dgm.db.TabMapper;
 import com.dgm.db.po.Node;
-import com.dgm.ui.BookNode;
 import com.dgm.ui.LogUtils;
 import com.dgm.ui.util.BreakNode;
 import com.dgm.ui.TreeView;
+import com.intellij.AppTopics;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.actions.searcheverywhere.FoundItemDescriptor;
 import com.intellij.ide.file.BatchFileChangeListener;
@@ -18,7 +18,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.ex.AnActionListener;
 import com.intellij.openapi.diff.impl.util.GutterActionRenderer;
-import com.intellij.openapi.editor.ex.EditorGutterComponentEx;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
 import com.intellij.openapi.fileEditor.FileEditor;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
@@ -52,7 +53,6 @@ import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.breakpoints.XBreakpointListener;
 import com.intellij.xdebugger.breakpoints.XBreakpointProperties;
 import com.intellij.xdebugger.impl.XDebuggerManagerImpl;
-import com.intellij.xdebugger.impl.XDebuggerUtilImpl;
 import com.intellij.xdebugger.impl.XSourcePositionImpl;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointUtil;
@@ -70,8 +70,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import javax.swing.tree.TreePath;
-
 /**
  * @author 王银飞
  * @email 371964363@qq.com
@@ -83,12 +81,103 @@ public class ApplicationContext implements Disposable{
   public static Alarm rebuildListAlarm = new Alarm(Alarm.ThreadToUse.POOLED_THREAD, ()->{});
   public static Alarm swingAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, () -> {});
 
+  private static void removeAll(Project project){
+    ((XDebuggerManagerImpl) XDebuggerManager.getInstance(project)).getState().getBreakpointManagerState().getBreakpoints().clear();
+    XBreakpointUtil.breakpointTypes().remove(e->true);
+
+    XBreakpointManagerImpl breakpointManager = (XBreakpointManagerImpl) XDebuggerManager.getInstance(project).getBreakpointManager();
+    XLineBreakpointManager lineBreakpointManager = breakpointManager.getLineBreakpointManager();
+    Field[] declaredFields = XDebuggerManager.getInstance(project).getBreakpointManager().getClass().getDeclaredFields();
+    Field myAllBreakpoints = Arrays.stream(declaredFields).filter(e -> e.getName().equals("myAllBreakpoints")).findAny().get();
+    try {
+      myAllBreakpoints.setAccessible(true);
+      LinkedHashSet linkedHashSet = (LinkedHashSet) myAllBreakpoints.get(breakpointManager);
+      linkedHashSet.clear();
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+    }
+    Field[] declaredFields1 = lineBreakpointManager.getClass().getDeclaredFields();
+    Field myBreakpoints = Arrays.stream(declaredFields1).filter(e -> e.getName().equals("myBreakpoints")).findAny().get();
+    try {
+      myBreakpoints.setAccessible(true);
+      BidirectionalMap<?, ?> map = (BidirectionalMap<?, ?>) myBreakpoints.get(lineBreakpointManager);
+      map.keySet().stream().filter(Objects::nonNull).filter(e->e instanceof XLineBreakpointImpl).forEach(e-> {
+        if (((XLineBreakpointImpl) e).getHighlighter() != null) {
+          ((XLineBreakpointImpl) e).getHighlighter().setGutterIconRenderer(null);
+          ((XLineBreakpointImpl) e).getHighlighter().setGutterIconRenderer(new GutterActionRenderer(new AnAction(AllIcons.Diff.ArrowLeftDown) {
+            @Override
+            public void actionPerformed(AnActionEvent anActionEvent) {
+
+            }
+          }));
+        }
+        ((XLineBreakpointImpl) e).dispose();
+      });
+      map.clear();
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+    }
+  }
 
   public static void addVirtualFileManagerListener(Project project){
     VirtualFileManager.getInstance().addVirtualFileManagerListener(new VirtualFileManagerListener() {
 
     });
 
+    project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
+      @Override
+      public void fileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
+        BreakNode userData = project.getUserData(BreakNode.KEY);
+        if (userData != null) {
+          userData.newFile();
+        }
+      }
+    });
+    project.getMessageBus().connect().subscribe(AppTopics.FILE_DOCUMENT_SYNC, new FileDocumentManagerListener() {
+      public void fileContentLoaded(@NotNull VirtualFile file, @NotNull Document document) {
+        System.out.println("file.getPath() = " + file.getPath());
+      }
+
+      @Override
+      public void beforeAllDocumentsSaving() {
+
+      }
+
+      @Override
+      public void beforeDocumentSaving(@NotNull Document document) {
+
+      }
+
+      @Override
+      public void beforeFileContentReload(@NotNull VirtualFile file, @NotNull Document document) {
+        System.out.println("file.getPath() = " + file.getPath());
+      }
+
+      @Override
+      public void fileWithNoDocumentChanged(@NotNull VirtualFile file) {
+        System.out.println("file.getPath() = " + file.getPath());
+      }
+
+      @Override
+      public void fileContentReloaded(@NotNull VirtualFile file, @NotNull Document document) {
+        System.out.println("file.getPath() = " + file.getPath());
+      }
+
+      @Override
+      public void unsavedDocumentDropped(@NotNull Document document) {
+
+      }
+
+      @Override
+      public void unsavedDocumentsDropped() {
+
+      }
+
+      @Override
+      public void afterDocumentUnbound(@NotNull VirtualFile file, @NotNull Document document) {
+
+      }
+    });
     project.getMessageBus().connect().subscribe(BatchFileChangeListener.TOPIC, new BatchFileChangeListener() {
       @Override
       public void batchChangeStarted(Project project, String activityName) {
@@ -119,63 +208,26 @@ public class ApplicationContext implements Disposable{
     project.getMessageBus().connect().subscribe(BranchChangeListener.VCS_BRANCH_CHANGED, new BranchChangeListener() {
       @Override
       public void branchWillChange(String branchName) {
+//        removeAll(project);
         TabMapper userData = project.getUserData(TabMapper.key);
+        project.putUserData(DGMToolWindow.branch,true);
         if (userData != null) {
           userData.getTabs().forEach((k,v)->{
             v.bind(branchName);
           });
         }
-
-        XBreakpoint<?>[] allBreakpoints = XDebuggerManagerImpl.getInstance(project).getBreakpointManager().getAllBreakpoints();
-//        for (XBreakpoint<?> allBreakpoint : allBreakpoints) {
-//          XDebuggerUtilImpl.getInstance().removeBreakpoint(project, allBreakpoint);
-//        }
-
-        XBreakpointUtil.breakpointTypes().remove(e->true);
-
-        XBreakpointManagerImpl breakpointManager = (XBreakpointManagerImpl) XDebuggerManager.getInstance(project).getBreakpointManager();
-        XLineBreakpointManager lineBreakpointManager = breakpointManager.getLineBreakpointManager();
-        Field[] declaredFields = XDebuggerManager.getInstance(project).getBreakpointManager().getClass().getDeclaredFields();
-        Field myAllBreakpoints = Arrays.stream(declaredFields).filter(e -> e.getName().equals("myAllBreakpoints")).findAny().get();
-        try {
-          myAllBreakpoints.setAccessible(true);
-          LinkedHashSet linkedHashSet = (LinkedHashSet) myAllBreakpoints.get(breakpointManager);
-          linkedHashSet.clear();
-        } catch (IllegalAccessException e) {
-          e.printStackTrace();
-        }
-        Field[] declaredFields1 = lineBreakpointManager.getClass().getDeclaredFields();
-        Field myBreakpoints = Arrays.stream(declaredFields1).filter(e -> e.getName().equals("myBreakpoints")).findAny().get();
-        try {
-          myBreakpoints.setAccessible(true);
-          BidirectionalMap<?, ?> map = (BidirectionalMap<?, ?>) myBreakpoints.get(lineBreakpointManager);
-          map.keySet().stream().filter(Objects::nonNull).filter(e->e instanceof XLineBreakpointImpl).forEach(e-> {
-            if (((XLineBreakpointImpl) e).getHighlighter() != null) {
-              ((XLineBreakpointImpl) e).getHighlighter().setGutterIconRenderer(null);
-              ((XLineBreakpointImpl) e).getHighlighter().setGutterIconRenderer(new GutterActionRenderer(new AnAction(AllIcons.Diff.ArrowLeftDown) {
-                @Override
-                public void actionPerformed(AnActionEvent anActionEvent) {
-
-                }
-              }));
-            }
-            ((XLineBreakpointImpl) e).dispose();
-          });
-          map.clear();
-        } catch (IllegalAccessException e) {
-          e.printStackTrace();
-        }
-
       }
 
       @Override
       public void branchHasChanged(String branchName) {
+//        removeAll(project);
         TabMapper userData = project.getUserData(TabMapper.key);
         if (userData != null) {
           userData.getTabs().forEach((k,v)->{
             v.unbind(branchName);
           });
         }
+        project.putUserData(DGMToolWindow.branch,false);
       }
     });
   }
@@ -184,6 +236,14 @@ public class ApplicationContext implements Disposable{
     project.getMessageBus().connect().subscribe(XBreakpointListener.TOPIC, new XBreakpointListener<XBreakpoint<XBreakpointProperties>>() {
       @Override
       public void breakpointAdded(XBreakpoint<XBreakpointProperties> xBreakpoint) {
+        String onChosen = Arrays.stream(new RuntimeException().getStackTrace())
+                .map(StackTraceElement::getMethodName)
+                .filter(e -> e.equals("onChosen") || e.equals("mouseClicked"))
+                .findAny()
+                .orElse(null);
+        if(onChosen == null || project.getUserData(DGMToolWindow.branch)) {
+          return;
+        }
         if(xBreakpoint instanceof XLineBreakpointImpl){
           VirtualFile file = ((XLineBreakpointImpl) xBreakpoint).getFile();
           String relativePath = null;
@@ -207,6 +267,9 @@ public class ApplicationContext implements Disposable{
 
       @Override
       public void breakpointRemoved(XBreakpoint breakpoint) {
+        if(project.getUserData(DGMToolWindow.branch)) {
+          return;
+        }
         if(breakpoint instanceof XLineBreakpointImpl){
           VirtualFile file = ((XLineBreakpointImpl) breakpoint).getFile();
           String relativePath = null;

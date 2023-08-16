@@ -33,7 +33,15 @@
     <projectIndexingHistoryListener implementation="com.dgm.DGMToolWindow"/>
   </extensions>
 
+  <extensions defaultExtensionNs="com.intellij">
+    <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerLast" order="last"/>
+    <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerFirst" order="first"/>
+  </extensions>
 
+  <projectListeners>
+    <listener class="com.intellij.tasks.context.BranchContextTracker" topic="com.intellij.openapi.vcs.BranchChangeListener" />
+    <listener class="com.dgm.MyListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+  </projectListeners>
   <extensions defaultExtensionNs="Git4Idea">
     <!-- Add your extensions here -->
   </extensions>

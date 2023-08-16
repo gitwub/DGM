@@ -2,10 +2,15 @@ package com.dgm.ui.util;
 
 import com.dgm.DGMConstant;
 import com.dgm.ui.BookNode;
+import com.intellij.diff.merge.MergeWindow;
 import com.intellij.openapi.util.Key;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.Consumer;
+import com.twelvemonkeys.util.LinkedSet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -47,4 +52,24 @@ public class BreakNode extends ConcurrentHashMap<String, List<BookNode>> {
         }
     }
 
+
+    public void newFile() {
+        values().stream()
+                .filter(e->e != null)
+                .flatMap(e->e.stream())
+                .filter(e-> e.getVirtualFile().get() == null)
+                .forEach(BookNode::openVirtualFile);
+    }
+
+    public void deleteFile(VirtualFile file) {
+        values().stream()
+                .filter(e->e != null)
+                .flatMap(e->e.stream())
+                .filter(e-> e.getVirtualFile().get() != null)
+                .filter(e->e.getVirtualFile().get().getPath().equals(file.getPath()))
+                .forEach(e->{
+                    e.removeEditorState();
+                    e.getVirtualFile().set(null);
+                });
+    }
 }

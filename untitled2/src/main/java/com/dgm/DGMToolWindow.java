@@ -3,6 +3,7 @@ package com.dgm;
 import com.dgm.db.TabMapper;
 import com.dgm.ui.LogUtils;
 import com.dgm.ui.TreeView;
+import com.dgm.ui.breakpoint.MyEditorMouseListener;
 import com.dgm.ui.util.BreakNode;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionManager;
@@ -13,6 +14,7 @@ import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.colors.EditorColorsListener;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorColorsScheme;
+import com.intellij.openapi.editor.event.EditorEventMulticaster;
 import com.intellij.openapi.editor.event.EditorFactoryEvent;
 import com.intellij.openapi.editor.event.EditorFactoryListener;
 import com.intellij.openapi.editor.impl.EditorImpl;
@@ -47,6 +49,10 @@ import com.intellij.util.indexing.diagnostic.ProjectIndexingHistory;
 import com.intellij.util.indexing.diagnostic.ProjectIndexingHistoryListener;
 import com.intellij.util.keyFMap.KeyFMap;
 import com.intellij.util.ui.AnimatedIcon;
+import com.intellij.xdebugger.XDebuggerManager;
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase;
+import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
+import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointManager;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -84,9 +90,11 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public static Key<JComponent> windowComponent = new Key(DGMToolWindow.class.getName());
   public static Key<ApplicationContext> key = new Key(DGMToolWindow.class.getName());
   public static Key<ContentManagerListener> keyLis = new Key(ContentManagerListener.class.getName());
+  public static Key<Boolean> branch = new Key("branch");
 
   @Override
   public void createToolWindowContent(Project project, ToolWindow toolWindow) {
+    project.putUserData(DGMToolWindow.branch, true);
     loading(toolWindow);
   }
 
@@ -138,6 +146,12 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
 
 
   private void openWindow(Project project) {
+    XBreakpointManagerImpl breakpointManager = ((XBreakpointManagerImpl) XDebuggerManager.getInstance(project).getBreakpointManager());
+    XBreakpointBase<?,?,?>[] breakpoints = breakpointManager.getAllBreakpoints();
+    for (final XBreakpointBase<?, ?, ?> breakpoint : breakpoints) {
+      ApplicationManager.getApplication().runWriteAction(() -> breakpointManager.removeBreakpoint(breakpoint));
+    }
+
     project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
       @Override
       public void selectionChanged(@NotNull FileEditorManagerEvent event) {
@@ -174,6 +188,9 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
     TabMapper tabMapper = new TabMapper(project);
     project.putUserData(TabMapper.key, tabMapper);
     tabMapper.refresh();
+//    project.putUserData(DGMToolWindow.branch, false);
+    EditorEventMulticaster editorEventMulticaster = EditorFactory.getInstance().getEventMulticaster();
+    editorEventMulticaster.addEditorMouseListener(new MyEditorMouseListener(project), project);
   }
   @Override
   public void onStartedIndexing(@NotNull ProjectIndexingHistory projectIndexingHistory) {
