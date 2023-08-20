@@ -26,6 +26,7 @@
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lang</depends>
   <depends>Git4Idea</depends>
+  <depends>com.intellij.java</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <!-- Add your extensions here -->
@@ -38,10 +39,6 @@
     <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerFirst" order="first"/>
   </extensions>
 
-  <projectListeners>
-    <listener class="com.intellij.tasks.context.BranchContextTracker" topic="com.intellij.openapi.vcs.BranchChangeListener" />
-    <listener class="com.dgm.MyListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
-  </projectListeners>
   <extensions defaultExtensionNs="Git4Idea">
     <!-- Add your extensions here -->
   </extensions>
@@ -55,6 +52,9 @@
 
     <action id="add a bookmark" class="com.dgm.leafaction.BookmarksAddTreeLeaf" icon="AllIcons.General.Add" >
        <keyboard-shortcut first-keystroke="control shift alt F11" keymap="$default"/>
+    </action>
+    <action id="add a bookmark group of trance" class="com.dgm.leafaction.BookmarksAddTranceLeaf" icon="AllIcons.General.Add" >
+       <keyboard-shortcut first-keystroke="control shift alt F10" keymap="$default"/>
     </action>
 
     <action id="bookmark_delete" class="com.dgm.leafaction.BookmarksDelete" icon="AllIcons.Actions.DeleteTag">
@@ -74,4 +74,8 @@
     </action>
   </actions>
 
+  <projectListeners>
+    <listener class="com.intellij.tasks.context.BranchContextTracker" topic="com.intellij.openapi.vcs.BranchChangeListener" />
+    <listener class="com.dgm.MyBulkFileListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+  </projectListeners>
 </idea-plugin>

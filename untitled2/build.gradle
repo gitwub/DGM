@@ -11,7 +11,7 @@ plugins {
 }
 intellij {
     version = "2021.3.1"
-    plugins = ['Git4Idea']
+    plugins = ['Git4Idea','java','java-decompiler']
     type = "IC"
 }
 

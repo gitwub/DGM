@@ -23,31 +23,25 @@ public class MyEditorMouseListener implements EditorMouseListener {
 
     @Override
     public void mousePressed(@NotNull EditorMouseEvent event) {
-        System.out.println("MyEditorMouseListener.mousePressed:mousePressed");
         project.putUserData(DGMToolWindow.branch,false);
     }
 
     @Override
     public void mouseClicked(@NotNull EditorMouseEvent event) {
         project.putUserData(DGMToolWindow.branch,true);
-        System.out.println("MyEditorMouseListener.mousePressed:mouseClicked");
 
     }
 
     @Override
     public void mouseReleased(@NotNull EditorMouseEvent event) {
-        System.out.println("MyEditorMouseListener.mousePressed:mouseReleased");
     }
 
     @Override
     public void mouseEntered(@NotNull EditorMouseEvent event) {
-        System.out.println("MyEditorMouseListener.mousePressed:mouseEntered");
 
     }
 
     @Override
     public void mouseExited(@NotNull EditorMouseEvent event) {
-        System.out.println("MyEditorMouseListener.mousePressed:mouseExited");
-
     }
 }
