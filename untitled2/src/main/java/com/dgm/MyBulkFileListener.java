@@ -13,9 +13,8 @@ import java.util.List;
  * @date 2023/8/16 21:32
  * @description
  * <applicationListeners>
- *        	  <listener class="com.plugin.MyBulkFileListener"
- *                     topic="com.intellij.openapi.vfs.newvfs.BulkFileListener">
- *      	</applicationListeners>
+ *  <listener class="com.plugin.MyBulkFileListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener">
+ * </applicationListeners>
  */
 public class MyBulkFileListener implements com.intellij.openapi.vfs.newvfs.BulkFileListener{
 
