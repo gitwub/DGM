@@ -8,20 +8,11 @@
 
   <description>
     <![CDATA[
-      A SIMPLE BREAKPOINT BOOKMARK GROUPING MANAGER THAT SUPPORTS JAVA BREAKPOINT MANAGEMENT
-      The shortcut key control shift alt + F11 adds a bookmark, if it does not take effect, please check the shortcut bookmark group manager group under Add a bookmark
-      Bookmark group manager, support multiple tabs, support Java class file debug breakpoint, file changes (including git file merge) automatically followed
+      A java code debugging grouping manager, double-click the leaf node to navigate to the code location
     ]]>
   </description>
 
-  <change-notes>
-    <![CDATA[
-      v1:
-      1.Bookmark group manager, support multiple tabs
-      2.Support for Java class file debug breakpoints
-      3.File changes (including git file merges) are automatically followed
-    ]]>
-  </change-notes>
+  <change-notes></change-notes>
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lang</depends>
