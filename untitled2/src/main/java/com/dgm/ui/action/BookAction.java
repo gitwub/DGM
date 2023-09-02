@@ -35,14 +35,11 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import javax.swing.Icon;
 import javax.swing.tree.TreePath;
 
 import git4idea.GitReference;
 import git4idea.GitUtil;
 import git4idea.repo.GitRepository;
-import git4idea.repo.GitRepositoryImpl;
-import git4idea.repo.GitRepositoryInitializer;
 import git4idea.repo.GitRepositoryManager;
 
 import static com.intellij.openapi.ui.popup.JBPopupFactory.ActionSelectionAid.MNEMONICS;

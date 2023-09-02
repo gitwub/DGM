@@ -1,6 +1,5 @@
 <idea-plugin>
-<!--  <idea-version since-build="203.*" until-build="213.*" />-->
-<!--  <idea-version since-build="203.*"/>-->
+  <idea-version since-build="203.*" />
   <id>com.dgm</id>
   <name>Debug Group Manager</name>
   <version>1.0</version>
@@ -12,7 +11,6 @@
     ]]>
   </description>
 
-  <change-notes></change-notes>
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lang</depends>
@@ -22,13 +20,11 @@
   <extensions defaultExtensionNs="com.intellij">
     <!-- Add your extensions here -->
     <toolWindow id="DGM" anchor="left" secondary="true" icon="AllIcons.Toolwindows.NoEvents" factoryClass="com.dgm.DGMToolWindow"/>
-    <projectIndexingHistoryListener implementation="com.dgm.DGMToolWindow"/>
   </extensions>
 
   <extensions defaultExtensionNs="com.intellij">
     <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerLast" order="last"/>
     <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerFirst" order="first"/>
-    <projectIndexingHistoryListener implementation="com.intellij.util.indexing.diagnostic.ProjectIndexingHistoryFusReporterListener"/>
   </extensions>
 
   <extensions defaultExtensionNs="Git4Idea">
@@ -66,8 +62,7 @@
     </action>
   </actions>
 
-  <projectListeners>
-    <listener class="com.intellij.tasks.context.BranchContextTracker" topic="com.intellij.openapi.vcs.BranchChangeListener" />
+  <applicationListeners>
     <listener class="com.dgm.MyBulkFileListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
-  </projectListeners>
+  </applicationListeners>
 </idea-plugin>

@@ -6,9 +6,9 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'idea'
     id 'org.jetbrains.intellij' version '1.14.1'
     id 'java-library'
+//    id 'idea'
 }
 intellij {
     version = "2021.3.1"

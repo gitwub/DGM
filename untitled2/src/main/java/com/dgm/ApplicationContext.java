@@ -47,7 +47,6 @@ import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentManager;
 import com.intellij.util.Alarm;
 import com.intellij.util.containers.BidirectionalMap;
-import com.intellij.util.indexing.FileBasedIndexInfrastructureExtension;
 import com.intellij.xdebugger.XDebuggerManager;
 import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.breakpoints.XBreakpointListener;
@@ -131,51 +130,6 @@ public class ApplicationContext implements Disposable{
         if (userData != null) {
           userData.newFile();
         }
-      }
-    });
-    project.getMessageBus().connect().subscribe(AppTopics.FILE_DOCUMENT_SYNC, new FileDocumentManagerListener() {
-      public void fileContentLoaded(@NotNull VirtualFile file, @NotNull Document document) {
-        System.out.println("file.getPath() = " + file.getPath());
-      }
-
-      @Override
-      public void beforeAllDocumentsSaving() {
-
-      }
-
-      @Override
-      public void beforeDocumentSaving(@NotNull Document document) {
-
-      }
-
-      @Override
-      public void beforeFileContentReload(@NotNull VirtualFile file, @NotNull Document document) {
-        System.out.println("file.getPath() = " + file.getPath());
-      }
-
-      @Override
-      public void fileWithNoDocumentChanged(@NotNull VirtualFile file) {
-        System.out.println("file.getPath() = " + file.getPath());
-      }
-
-      @Override
-      public void fileContentReloaded(@NotNull VirtualFile file, @NotNull Document document) {
-        System.out.println("file.getPath() = " + file.getPath());
-      }
-
-      @Override
-      public void unsavedDocumentDropped(@NotNull Document document) {
-
-      }
-
-      @Override
-      public void unsavedDocumentsDropped() {
-
-      }
-
-      @Override
-      public void afterDocumentUnbound(@NotNull VirtualFile file, @NotNull Document document) {
-
       }
     });
     project.getMessageBus().connect().subscribe(BatchFileChangeListener.TOPIC, new BatchFileChangeListener() {
@@ -334,7 +288,6 @@ public class ApplicationContext implements Disposable{
       }
     });
 
-    List<FileBasedIndexInfrastructureExtension> extensionList = FileBasedIndexInfrastructureExtension.EP_NAME.getExtensionList();
 
     project.getMessageBus().connect();
     project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {

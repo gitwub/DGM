@@ -142,9 +142,6 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
             } else {
                 Icon icon = IconManager.getInstance().getIcon(path, AllIcons.class);
                 if (icon == null) {
-                    icon = IconManager.getInstance().loadRasterizedIcon(path, AllIcons.class.getClassLoader(), 0, 0);
-                }
-                if (icon == null) {
                     icon = AllIcons.Nodes.NotFavoriteOnHover;
                 }
                 icons.put(path, icon);

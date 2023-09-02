@@ -1,7 +1,6 @@
 package com.dgm;
 
 import com.dgm.db.TabMapper;
-import com.dgm.ui.LogUtils;
 import com.dgm.ui.TreeView;
 import com.dgm.ui.breakpoint.MyEditorMouseListener;
 import com.dgm.ui.util.BreakNode;
@@ -9,61 +8,38 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.editor.EditorFactory;
-import com.intellij.openapi.editor.colors.EditorColorsListener;
-import com.intellij.openapi.editor.colors.EditorColorsManager;
-import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.editor.event.EditorEventMulticaster;
-import com.intellij.openapi.editor.event.EditorFactoryEvent;
-import com.intellij.openapi.editor.event.EditorFactoryListener;
-import com.intellij.openapi.editor.impl.EditorImpl;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
-import com.intellij.openapi.fileEditor.impl.EditorComposite;
-import com.intellij.openapi.fileEditor.impl.EditorWindow;
-import com.intellij.openapi.fileEditor.impl.EditorWithProviderComposite;
-import com.intellij.openapi.fileEditor.impl.PsiAwareFileEditorManagerImpl;
-import com.intellij.openapi.fileTypes.FileTypeEvent;
-import com.intellij.openapi.fileTypes.FileTypeListener;
-import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.DumbServiceImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManagerListener;
-import com.intellij.openapi.project.impl.ProjectExImpl;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Key;
+import com.intellij.openapi.vfs.VirtualFileManager;
+import com.intellij.openapi.vfs.newvfs.BulkFileListener;
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent;
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowEP;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.openapi.wm.impl.ToolWindowManagerImpl;
-import com.intellij.ui.components.labels.BoldLabel;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.ContentManagerEvent;
 import com.intellij.ui.content.ContentManagerListener;
-import com.intellij.util.indexing.FileBasedIndexImpl;
-import com.intellij.util.indexing.diagnostic.ProjectIndexingHistory;
-import com.intellij.util.indexing.diagnostic.ProjectIndexingHistoryListener;
-import com.intellij.util.keyFMap.KeyFMap;
 import com.intellij.util.ui.AnimatedIcon;
 import com.intellij.xdebugger.XDebuggerManager;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointManagerImpl;
-import com.intellij.xdebugger.impl.breakpoints.XLineBreakpointManager;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import javax.swing.Icon;
@@ -85,7 +61,7 @@ import static com.intellij.icons.AllIcons.Process.Big.Step_8;
  * @date 2023/4/18 0:34
  * @description
  */
-public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManagerListener, Runnable, ProjectIndexingHistoryListener {
+public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManagerListener, Runnable {
   private Logger logger = Logger.getLogger(DGMToolWindow.class.getSimpleName());
   public static Key<JComponent> windowComponent = new Key(DGMToolWindow.class.getName());
   public static Key<ApplicationContext> key = new Key(DGMToolWindow.class.getName());
@@ -96,6 +72,7 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public void createToolWindowContent(Project project, ToolWindow toolWindow) {
     project.putUserData(DGMToolWindow.branch, true);
     loading(toolWindow);
+    DumbServiceImpl.getInstance(project).smartInvokeLater(()-> openWindow(project), ModalityState.stateForComponent(toolWindow.getComponent()));
   }
 
   private void loading(ToolWindow app) {
@@ -136,15 +113,6 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public void run() {
   }
 
-
-  @Override
-  public void onFinishedIndexing(@NotNull ProjectIndexingHistory projectIndexingHistory) {
-    if (projectIndexingHistory.getTimes().getIndexingReason().equals("On project open")) {
-      ApplicationContext.ui(()-> openWindow(projectIndexingHistory.getProject()));
-    }
-  }
-
-
   private void openWindow(Project project) {
     XBreakpointManagerImpl breakpointManager = ((XBreakpointManagerImpl) XDebuggerManager.getInstance(project).getBreakpointManager());
     XBreakpointBase<?,?,?>[] breakpoints = breakpointManager.getAllBreakpoints();
@@ -152,6 +120,19 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
       ApplicationManager.getApplication().runWriteAction(() -> breakpointManager.removeBreakpoint(breakpoint));
     }
 
+    project.getMessageBus().connect().subscribe(VirtualFileManager.VFS_CHANGES, new BulkFileListener() {
+
+      @Override
+      public void before(@NotNull List<? extends VFileEvent> events) {
+        events.stream()
+                .filter(e->e instanceof VFileDeleteEvent)
+                .forEach(e->{
+                  if (project.getUserData(BreakNode.KEY) != null) {
+                    project.getUserData(BreakNode.KEY).deleteFile(((VFileDeleteEvent) e).getFile());
+                  }
+                });
+      }
+    });
     project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
       @Override
       public void selectionChanged(@NotNull FileEditorManagerEvent event) {
@@ -192,8 +173,5 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
     EditorEventMulticaster editorEventMulticaster = EditorFactory.getInstance().getEventMulticaster();
     editorEventMulticaster.addEditorMouseListener(new MyEditorMouseListener(project), project);
   }
-  @Override
-  public void onStartedIndexing(@NotNull ProjectIndexingHistory projectIndexingHistory) {
 
-  }
 }
