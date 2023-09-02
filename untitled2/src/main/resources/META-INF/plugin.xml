@@ -28,6 +28,7 @@
   <extensions defaultExtensionNs="com.intellij">
     <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerLast" order="last"/>
     <tasks.contextProvider implementation="com.dgm.ui.breakpoint.MyBreakpointListenerFirst" order="first"/>
+    <projectIndexingHistoryListener implementation="com.intellij.util.indexing.diagnostic.ProjectIndexingHistoryFusReporterListener"/>
   </extensions>
 
   <extensions defaultExtensionNs="Git4Idea">

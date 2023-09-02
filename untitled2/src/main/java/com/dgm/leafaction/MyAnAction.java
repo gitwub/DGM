@@ -4,6 +4,7 @@ import com.dgm.ui.renderer.CheckboxTreeCellRenderer;
 import com.dgm.DGMConstant;
 import com.dgm.db.po.Node;
 import com.intellij.find.impl.FindResultImpl;
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Editor;
@@ -16,12 +17,15 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileSystem;
 import com.intellij.openapi.vfs.impl.jar.JarFileSystemImpl;
 import com.intellij.psi.impl.PsiManagerImpl;
+import com.intellij.ui.CoreIconManager;
+import com.intellij.util.ui.JBImageIcon;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Logger;
 
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
 
 /**
@@ -73,13 +77,6 @@ public abstract class MyAnAction extends AnAction {
             node.setFilePath(jarRelative(((EditorImpl) (editor)).getVirtualFile()));
         }
         node.setChecked(DGMConstant.NODE_CHECKED_NO);
-
-        Icon icon = PsiManagerImpl.getInstance(editor.getProject()).findFile(((EditorImpl) editor).getVirtualFile()).getFileType().getIcon();
-        if(path.endsWith("java")) {
-            node.setIconPath("nodes/class.svg");
-        } else if(icon instanceof IconLoader.CachedImageIcon) {
-            node.setIconPath(((IconLoader.CachedImageIcon) (icon)).getOriginalPath());
-        }
         node.setColor(CheckboxTreeCellRenderer.flow);
         return node;
     }

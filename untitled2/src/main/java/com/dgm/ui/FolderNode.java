@@ -19,16 +19,10 @@ import javax.swing.tree.TreeNode;
  * @description
  */
 public class FolderNode extends MyTreeNode {
-    public Icon icon = AllIcons.Nodes.Folder;
     public FolderNode(Project app, Node node) {
         super(node);
         setAllowsChildren(true);
         this.app = app;
-    }
-
-    @Override
-    public Icon icon() {
-        return icon;
     }
 
     @Override

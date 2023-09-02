@@ -24,11 +24,6 @@ public abstract class MyTreeNode extends CheckedTreeNode {
         this.node = node;
     }
 
-    public Icon icon() {
-        return null;
-    }
-
-
     public String nodeDesc() {
         return node.getNodeName();
     }

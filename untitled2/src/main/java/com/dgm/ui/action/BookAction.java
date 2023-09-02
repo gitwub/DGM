@@ -39,9 +39,11 @@ import javax.swing.Icon;
 import javax.swing.tree.TreePath;
 
 import git4idea.GitReference;
+import git4idea.GitUtil;
 import git4idea.repo.GitRepository;
 import git4idea.repo.GitRepositoryImpl;
 import git4idea.repo.GitRepositoryInitializer;
+import git4idea.repo.GitRepositoryManager;
 
 import static com.intellij.openapi.ui.popup.JBPopupFactory.ActionSelectionAid.MNEMONICS;
 
@@ -126,12 +128,6 @@ public class BookAction {
                 MyTreeNode lastPathComponent = (MyTreeNode) selectionPath.getLastPathComponent();
 
                 if (ProjectLevelVcsManagerImpl.getInstanceEx(anActionEvent.getProject()).checkVcsIsActive("Git")) {
-                    GitRepository instance = GitRepositoryImpl.createInstance(anActionEvent.getProject().getBaseDir(), anActionEvent.getProject(), new Disposable() {
-                        @Override
-                        public void dispose() {
-
-                        }
-                    }, false);
                     if(lastPathComponent instanceof BookNode) {
                         ArrayList<AnAction> actions = new ArrayList<>();
                         if(DGMConstant.LOCKED_.equals(lastPathComponent.node().getLocked())) { //已加锁
@@ -152,6 +148,8 @@ public class BookAction {
                             actions.add(new ActionGroup(DGMConstant.BIND,true) {
                                 @Override
                                 public AnAction[] getChildren(@Nullable AnActionEvent anActionEvent) {
+                                    GitRepositoryManager repositoryManager = GitUtil.getRepositoryManager(anActionEvent.getProject());
+                                    GitRepository instance = repositoryManager.getRepositoryForFile(anActionEvent.getProject().getProjectFile());
                                     return instance.getBranches().getLocalBranches()
                                             .stream()
                                             .map(GitReference::getName)
@@ -184,6 +182,8 @@ public class BookAction {
                                 new ActionGroup(DGMConstant.BIND,true) {
                                     @Override
                                     public AnAction[] getChildren(@Nullable AnActionEvent anActionEvent) {
+                                        GitRepositoryManager repositoryManager = GitUtil.getRepositoryManager(anActionEvent.getProject());
+                                        GitRepository instance = repositoryManager.getRepositoryForFile(anActionEvent.getProject().getProjectFile());
                                         return instance.getBranches().getLocalBranches()
                                                 .stream()
                                                 .map(GitReference::getName)

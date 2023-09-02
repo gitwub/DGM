@@ -5,6 +5,7 @@ import com.dgm.ui.FolderNode;
 import com.dgm.ui.MyTreeNode;
 import com.dgm.db.po.Node;
 import com.dgm.ui.util.ColorsUtil;
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.util.treeView.NodeRenderer;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.ui.ColoredTreeCellRenderer;
@@ -22,6 +23,9 @@ import javax.swing.JPanel;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeCellRenderer;
+
+import static com.dgm.ui.renderer.CheckboxTreeCellRenderer.getIconByPath;
+
 
 /**
  * @author 王银飞
@@ -44,7 +48,9 @@ public class SearchTreeCellRenderer extends JPanel implements TreeCellRenderer {
                 super.customizeCellRenderer(tree, value, selected, expanded, leaf, row, hasFocus);
                 if(value instanceof BookNode || value instanceof FolderNode) {
                     clear();
-                    setIcon(((MyTreeNode)(value)).icon());
+                    if(value instanceof BookNode) {
+                        setIcon(getIconByPath(((MyTreeNode)(value)).node().getFilePath()));
+                    }
 
                     Color textColor = ColorsUtil.getColor( (DefaultMutableTreeNode)value, Node::getColor, ColorsUtil.convertColorRGB(ColorsUtil.BLACK));
                     Color styleColor = ColorsUtil.getColor( (DefaultMutableTreeNode)value, Node::getWaveColor, ColorsUtil.convertColorRGB(ColorsUtil.BLACK));
@@ -92,10 +98,6 @@ public class SearchTreeCellRenderer extends JPanel implements TreeCellRenderer {
         return this.accessibleContext;
     }
 
-    /**
-     * @deprecated
-     */
-    @Deprecated
     public void customizeCellRenderer(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 
     }

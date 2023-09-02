@@ -88,7 +88,6 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
     private static Map<String, VirtualFile> alreadyChoose = new ConcurrentHashMap<>();
     private final String tableName;
     private boolean searchable = false;
-    public Icon icon = AllIcons.Nodes.NotFavoriteOnHover;
 
     private AtomicReference<VirtualFile> virtualFile = new AtomicReference<>();
     private volatile int lineNumber;
@@ -106,13 +105,6 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
         String path = node.getFilePath();
         this.isChecked = node.isChecked();
         lineNumber = node.getLineNumber();
-        String iconPath = node.getIconPath();
-        if(iconPath != null) {
-            icon = IconManager.getInstance().getIcon(iconPath,   AllIcons.class);
-            if (icon == null) {
-                icon = IconManager.getInstance().loadRasterizedIcon(iconPath, AllIcons.class.getClassLoader(), 0, 0);
-            }
-        }
         VirtualFileManager instance = VirtualFileManager.getInstance();
         String protocol = node.getProtocol();
         VirtualFileSystem fileSystem = instance.getFileSystem(protocol);
@@ -353,11 +345,6 @@ public class BookNode extends MyTreeNode implements com.intellij.openapi.editor.
             rangeHighlighterEx.setErrorStripeTooltip(node.getNodeName());
             rangeHighlighterEx.setTextAttributes(attributes);
         }
-    }
-
-    @Override
-    public Icon icon() {
-        return icon;
     }
 
     public ThreeStateCheckBox.State getState() {

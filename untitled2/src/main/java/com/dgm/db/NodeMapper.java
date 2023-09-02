@@ -27,7 +27,7 @@ import javax.swing.tree.TreePath;
 public class NodeMapper extends DBUtils {
 
     private static final String fullSelectId = "`id`";
-    private static final String fullSelectFull = "`sort_index`,`parent_id`, `node_name`, `protocol`, `color`, `wave_color`, `text_style`, `level`, `dgm_type`, `checked`, `file_path`, `jar_name`, `icon_path`, `origin_text`, `line_number`, `column`, `line_end_offset`, `location`, `editor_text_color`, `editor_bg_color`, `editor_style_color`, `editor_style`, `lock_at`, `state`";
+    private static final String fullSelectFull = "`sort_index`,`parent_id`, `node_name`, `protocol`, `color`, `wave_color`, `text_style`, `level`, `dgm_type`, `checked`, `file_path`, `jar_name`, `origin_text`, `line_number`, `column`, `line_end_offset`, `location`, `editor_text_color`, `editor_bg_color`, `editor_style_color`, `editor_style`, `lock_at`, `state`";
     private static final String fullSelectSql = fullSelectId + ", " + fullSelectFull;
 
     public static Key<NodeMapper> key = new Key(NodeMapper.class.getName());
@@ -165,7 +165,6 @@ public class NodeMapper extends DBUtils {
         e.setChecked(resultSet.getBoolean("checked"));
         e.setFilePath(resultSet.getString("file_path"));
         e.setJarName(resultSet.getString("jar_name"));
-        e.setIconPath(resultSet.getString("icon_path"));
         e.setOriginText(resultSet.getString("origin_text"));
         e.setLineNumber(resultSet.getInt("line_number"));
         e.setColumn(resultSet.getInt("column"));
@@ -203,7 +202,6 @@ public class NodeMapper extends DBUtils {
 
                 ifNull(node.getFilePath()) + "," +
                 ifNull(node.getJarName()) + "," +
-                ifNull(node.getIconPath()) + "," +
                 ifNull(node.getOriginText()) + "," +
 
                 "'" + node.getLineNumber() + "'," +

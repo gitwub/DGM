@@ -219,15 +219,6 @@ public class Node {
         return this;
     }
 
-    public String getIconPath() {
-        return iconPath;
-    }
-
-    public Node setIconPath(String iconPath) {
-        this.iconPath = iconPath;
-        return this;
-    }
-
     public String getOriginText() {
         return originText;
     }

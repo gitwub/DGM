@@ -87,7 +87,6 @@ public abstract class DBUtils implements Disposable {
                                 "    `lock_at` text default null,\n" +// 1选中 0未选中
                                 "    `file_path` text,\n" +//文件路径
                                 "    `jar_name` text,\n" +//jar名字
-                                "    `icon_path` text,\n" +//图标路径
                                 "    `origin_text` text not null,\n" +//原生文本
                                 "    `line_number` integer,\n" +//行
                                 "    `column` integer,\n" +//列

@@ -1,17 +1,17 @@
 package com.dgm.ui.renderer;
 
 import com.dgm.DGMConstant;
+import com.dgm.db.po.Node;
+import com.dgm.ui.BookNode;
 import com.dgm.ui.FolderNode;
 import com.dgm.ui.MyTreeNode;
-import com.dgm.ui.BookNode;
-import com.dgm.db.po.Node;
 import com.dgm.ui.util.ColorsUtil;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.util.treeView.NodeRenderer;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.ui.CheckedTreeNode;
 import com.intellij.ui.ColoredTreeCellRenderer;
-import com.intellij.ui.SimpleColoredComponent;
+import com.intellij.ui.IconManager;
 import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.ThreeStateCheckBox;
@@ -25,8 +25,10 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.accessibility.AccessibleContext;
+import javax.swing.Icon;
 import javax.swing.JPanel;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -50,6 +52,7 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
     public static final String flow = "跟随";
     private final boolean myUsePartialStatusForParentNodes;
     protected boolean myIgnoreInheritance;
+    private static ConcurrentHashMap<String, Icon> icons = new ConcurrentHashMap<>();
 
     public CheckboxTreeCellRenderer(boolean opaque) {
         this(opaque, true);
@@ -68,7 +71,11 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
                 super.customizeCellRenderer(tree, value, selected, expanded, leaf, row, hasFocus);
                 if(value instanceof BookNode || value instanceof FolderNode) {
                     clear();
-                    setIcon(((MyTreeNode)(value)).icon());
+                    if(value instanceof BookNode) {
+                        setIcon(getIconByPath(((MyTreeNode)(value)).node().getFilePath()));
+                    } else {
+                        setIcon(AllIcons.Nodes.Folder);
+                    }
 //
                     Color textColor = ColorsUtil.getColor( (DefaultMutableTreeNode)value, Node::getColor, ColorsUtil.convertColorRGB(ColorsUtil.BLACK));
                     Color styleColor = ColorsUtil.getColor( (DefaultMutableTreeNode)value, Node::getWaveColor, ColorsUtil.convertColorRGB(ColorsUtil.BLACK));
@@ -83,6 +90,70 @@ public class CheckboxTreeCellRenderer extends JPanel implements TreeCellRenderer
         this.add(this.myCheckbox, WEST);
         this.add(this.myTextRenderer, CENTER);
         this.add(this.locked, EAST);
+    }
+
+    public static Icon getIconByPath(String filePath) {
+        String path = "";
+        try {
+            if (filePath.endsWith(".uml")) {
+                path = "fileTypes/diagram.svg";
+            } else if (filePath.endsWith(".class")) {
+                path = "fileTypes/java.svg";
+            } else if (filePath.endsWith(".java")) {
+                path = "nodes/class.svg";
+            } else if (filePath.endsWith(".patch")) {
+                path = "vcs/patch_file.svg";
+            } else if (filePath.endsWith(".sql")) {
+                path = "icons/sql.svg";
+            } else if (filePath.endsWith(".snippet")) {
+                path = "fileTypes/java.svg";
+            } else if (filePath.endsWith(".css")) {
+                path = "fileTypes/css.svg";
+            } else if (filePath.endsWith(".txt")) {
+                path = "fileTypes/text.svg";
+            } else if (filePath.endsWith(".json")) {
+                path = "fileTypes/json.svg";
+            } else if (filePath.endsWith(".xml")) {
+                path = "fileTypes/xml.svg";
+            } else if (filePath.endsWith(".html")) {
+                path = "fileTypes/html.svg";
+            } else if (filePath.endsWith(".dtd")) {
+                path = "fileTypes/dtd.svg";
+            } else if (filePath.endsWith(".mf")) {
+                path = "fileTypes/manifest.svg";
+            } else if (filePath.endsWith(".scratch")) {
+                path = "fileTypes/text.svg";
+            } else if (filePath.endsWith(".yaml")) {
+                path = "fileTypes/yaml.svg";
+            } else if (filePath.endsWith(".xhtml")) {
+                path = "fileTypes/xhtml.svg";
+            } else if (filePath.endsWith(".ignore")) {
+                path = "vcs/ignore_file.svg";
+            } else if (filePath.endsWith(".gitignore")) {
+                path = "vcs/ignore_file.svg";
+            }
+
+
+            if ("".equals(path)) {
+                path = "nodes/notFavoriteOnHover.svg";
+            }
+            if (icons.containsKey(path)) {
+                return icons.get(path);
+            } else {
+                Icon icon = IconManager.getInstance().getIcon(path, AllIcons.class);
+                if (icon == null) {
+                    icon = IconManager.getInstance().loadRasterizedIcon(path, AllIcons.class.getClassLoader(), 0, 0);
+                }
+                if (icon == null) {
+                    icon = AllIcons.Nodes.NotFavoriteOnHover;
+                }
+                icons.put(path, icon);
+                return icons.get(path);
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return AllIcons.Nodes.NotFavoriteOnHover;
     }
 
     public CheckboxTreeCellRenderer() {

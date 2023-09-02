@@ -25,7 +25,6 @@ public class DGMConstant {
     public static String LOCATION = "location";
     public static int LOCATION_INNER = 1;
     public static int LOCATION_OUT = 0;
-    public static String ICON_PATH = "iconPath";
     public static String LINE_NUMBER = "lineNumber";
     public static String COLUMN = "column";
     public static String LINE_END_OFFSET = "lineEndOffset";
