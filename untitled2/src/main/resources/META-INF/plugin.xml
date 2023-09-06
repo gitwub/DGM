@@ -62,7 +62,7 @@
     </action>
   </actions>
 
-  <applicationListeners>
-    <listener class="com.dgm.MyBulkFileListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
-  </applicationListeners>
+<!--  <applicationListeners>-->
+<!--    <listener class="com.dgm.MyBulkFileListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>-->
+<!--  </applicationListeners>-->
 </idea-plugin>

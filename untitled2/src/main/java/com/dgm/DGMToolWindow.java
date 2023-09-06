@@ -8,15 +8,14 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.event.EditorEventMulticaster;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.DumbAware;
-import com.intellij.openapi.project.DumbServiceImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManagerListener;
+import com.intellij.openapi.startup.StartupManager;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
@@ -40,6 +39,7 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.BorderLayout;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javax.swing.Icon;
@@ -72,7 +72,7 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
   public void createToolWindowContent(Project project, ToolWindow toolWindow) {
     project.putUserData(DGMToolWindow.branch, true);
     loading(toolWindow);
-    DumbServiceImpl.getInstance(project).smartInvokeLater(()-> openWindow(project), ModalityState.stateForComponent(toolWindow.getComponent()));
+    StartupManager.getInstance(project).runWhenProjectIsInitialized(()-> ApplicationManager.getApplication().runWriteAction(()-> openWindow(project)));
   }
 
   private void loading(ToolWindow app) {
@@ -174,4 +174,18 @@ public class DGMToolWindow implements ToolWindowFactory, DumbAware, ProjectManag
     editorEventMulticaster.addEditorMouseListener(new MyEditorMouseListener(project), project);
   }
 
+  private static final class RunnableDelegate implements Runnable {
+    final Runnable task;
+    private final Consumer<Runnable> executor;
+
+    private RunnableDelegate(@NotNull Runnable task, @NotNull Consumer<Runnable> executor) {
+      super();
+      this.task = task;
+      this.executor = executor;
+    }
+
+    public void run() {
+      this.executor.accept(this.task);
+    }
+  }
 }
